@@ -14,3 +14,10 @@
 #define INDIAN_RED      COLOR_GEN(205,92,92) 
 #define PURPLE          COLOR_GEN(128,0,128)
 #define SPRING_GREEN    COLOR_GEN(0,255,127)
+
+
+
+
+
+
+#define PINK_RED        COLOR_GEN(234, 26, 127)

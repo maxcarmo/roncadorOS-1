@@ -27,8 +27,9 @@ DRIVE_ID = disco1
 DRIVE = if=none,format=raw,file=$(DISK),id=$(DRIVE_ID)
 HDD = virtio-blk-device,drive=$(DRIVE_ID)
 RANDON = virtio-rng-device
+GPU = virtio-gpu-device
 
-RAM = 128M
+RAM = 2G
 # '\' é continuação da linha
 OBJ = \
 	boot.o \
@@ -44,6 +45,7 @@ OBJ = \
 	console.o \
 	proc.o \
 	programs.o \
+	gpu.o \
 	virtio.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
@@ -57,14 +59,18 @@ kernel: $(OBJ)
 	$(LD) $(LDFLAGS) $(SCRIPT) -o $@  $(OBJ)
 
 run: kernel
-	$(QEMU) -append 'console=ttyS0' -nographic -serial mon:stdio \
+	$(QEMU) -append 'console=ttyS0' -serial mon:stdio -nographic \
 	-bios none \
+	-cpu rv64 \
 	-smp $(NCPU) \
 	-machine virt -m $(RAM) \
-	-drive $(DRIVE) -device $(HDD) -device $(RANDON) \
+	-drive $(DRIVE) \
+	-device $(HDD) \
+	-device $(RANDON) \
+	-device $(GPU) \
 	-kernel kernel		
 debug: kernel
-	$(QEMU) -machine virt -m $(RAM) -nographic -serial mon:stdio -bios none \
+	$(QEMU) -machine virt -m $(RAM) -nographic -serial mon:stdio -bios none -device $(GPU) \
 	-gdb tcp::1234 -S -kernel kernel
 clean: 
 	rm -rf kernel

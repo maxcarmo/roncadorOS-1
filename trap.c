@@ -103,6 +103,16 @@ mtrap(uint64 tval,
                 // Obtém  a IRQ que causou a interrupção
                 irq = plic_claim();
                 switch(irq) {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                        printf(PINK_RED "VIRTIO DEVICE AAAA\n" CR);
+                        break;
                     case UART_IRQ:
                         console_handler();
                         break;

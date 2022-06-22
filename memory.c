@@ -344,12 +344,12 @@ memory_test() {
     printf(LIGHT_SEA_GREEN);
     printf(" --- PAGINAÇÃO (endereços virtuais e físicos dos segmentos) ---\n");
     pte_t *pte = walk(kernel_pagetable, KERNEL_START, 0);
-    printf("TEXT_START\t\tVA: %p\tPA:%p\n", KERNEL_START, (uint64*)pte2pa(*pte));
+    printf("TEXT_START\t\tVA:%p\tPA:%p\n", KERNEL_START, (uint64*)pte2pa(*pte));
     pte = walk(kernel_pagetable, (uint64) text_end, 0);
     printf("DATA_START\t\tVA:%p\tPA:%p\n", text_end, (uint64*)pte2pa(*pte));
     pte = walk(kernel_pagetable, (uint64) stack_start, 0);
     printf("KERNEL STACK_START\tVA:%p\tPA:%p\n", stack_start, (uint64*)pte2pa(*pte));
     pte = walk(kernel_pagetable, (uint64) HEAP_START, 0);
-    printf("HEAP_START\t\tVA: %p\tPA:%p\n", HEAP_START, (uint64*)pte2pa(*pte));
+    printf("HEAP_START\t\tVA:%p\tPA:%p\n", HEAP_START, (uint64*)pte2pa(*pte));
     printf(CR);
 }
