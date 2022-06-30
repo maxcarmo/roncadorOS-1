@@ -46,7 +46,8 @@ OBJ = \
 	proc.o \
 	programs.o \
 	gpu.o \
-	virtio.o
+	virtio.o \
+	rng.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
 %.o: %.c
@@ -59,13 +60,11 @@ kernel: $(OBJ)
 	$(LD) $(LDFLAGS) $(SCRIPT) -o $@  $(OBJ)
 
 run: kernel
-	$(QEMU) -append 'console=ttyS0' -serial mon:stdio -nographic \
+	$(QEMU) -append 'console=ttyS0' -serial mon:stdio -display vnc=127.0.0.1:0 \
 	-bios none \
 	-cpu rv64 \
 	-smp $(NCPU) \
 	-machine virt -m $(RAM) \
-	-drive $(DRIVE) \
-	-device $(HDD) \
 	-device $(RANDON) \
 	-device $(GPU) \
 	-kernel kernel		
