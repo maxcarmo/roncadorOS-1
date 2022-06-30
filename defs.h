@@ -18,6 +18,7 @@ void memory_init();
 void kvminit();
 void memory_test();
 void *alloc(int);
+void dealloc(void*);
 uint64 *uvmcreate();
 int mappages(uint64 *, uint64, uint64, uint64, int);
 pte_t *walk(pte_t *, uint64, int);
