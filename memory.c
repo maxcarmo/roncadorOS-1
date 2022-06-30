@@ -149,6 +149,20 @@ alloc(int pages) {
     return 0;
 }
 
+void dealloc(void *address){
+    uint8 desc_number = (((uint64) address) - ((uint64) alloc_start))/PAGE_SIZE;
+    uint8 *desc = (uint8*) (HEAP_START + desc_number);
+    if (free_page(*desc)) return; //se a pagina está livre, retorna
+    while(!last_page(*desc)){
+        set_free_page_flag(desc, FREEPG);
+        desc++;
+    }
+    set_free_page_flag(desc, FREEPG);
+    set_last_page_flag(desc, !LASTPG);
+}
+
+
+
 // Buscar o PTE (de L0) correspondente ao VA (uma consulta), ou
 // alocar uma página para a tabela de páginas, caso não exista 
 // (criação da entrada)
@@ -332,8 +346,12 @@ memory_test() {
     desc = (uint8*) HEAP_START;
     printf("DESCRITOR PÁG.\tSTATUS (0-OCUPADA  1-LIVRE  2-OCUPADA/ÚLTIMA)\n");
     for(int i = 0; i < 5; i ++) { //Os 5 primeiros descritores
-        printf("%d\t  \t%d\n", i, *(desc+i)); 
+        printf("%d\t  \t%d\t%p\n", i, *(desc+i), (i*PAGE_SIZE)+alloc_start); 
     }
+    printf("Desalocando...\n");
+    dealloc(p);
+    dealloc(p2);
+
     printf("TEXT_END:\t%p\n", TEXT_END);
     printf("Início pilha:\t%p\n", stack_start);
     printf("Fim da pilha:\t%p\n", stack_end);
