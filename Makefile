@@ -26,8 +26,9 @@ DISK = hdd.disco
 DRIVE_ID = disco1
 DRIVE = if=none,format=raw,file=$(DISK),id=$(DRIVE_ID)
 HDD = virtio-blk-device,drive=$(DRIVE_ID)
-RANDON = virtio-rng-device
+RANDOM = virtio-rng-device
 GPU = virtio-gpu-device
+KEYBOARD = virtio-keyboard-device
 
 RAM = 2G
 # '\' é continuação da linha
@@ -47,7 +48,9 @@ OBJ = \
 	programs.o \
 	gpu.o \
 	virtio.o \
-	rng.o
+	rng.o \
+	game.o \
+	keyboard.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
 %.o: %.c
@@ -65,8 +68,9 @@ run: kernel
 	-cpu rv64 \
 	-smp $(NCPU) \
 	-machine virt -m $(RAM) \
-	-device $(RANDON) \
+	-device $(RANDOM) \
 	-device $(GPU) \
+	-device $(KEYBOARD) \
 	-kernel kernel		
 debug: kernel
 	$(QEMU) -machine virt -m $(RAM) -nographic -serial mon:stdio -bios none -device $(GPU) \
