@@ -9,16 +9,26 @@
 
 #define VIRTIO_MAGIC 0x74726976 //"triv" em little endian
 
-//Regitradores de controle virtio mapeados em memório
-#define VIRTIO_MMIO_DEVICE_ID	0x008 // tipo de dispositivo. Disco = 2
 
-#define VIRTQ_DESC_F_NEXT 1
-#define VIRTQ_DESC_F_WRITE 2
-#define VIRTQ_DESC_F_INDIRECT 4
-#define VIRTQ_AVAIL_F_NO_INTERRUPT 1
-#define VIRTQ_USED_F_NO_NOTIFY 1
+//status register bits
+#define STATUS_RESET				(0)
+#define STATUS_ACKNOWLEDGE 			(1 << 0)
+#define STATUS_DRIVER				(1 << 1)
+#define STATUS_DRIVER_OK 			(1 << 2)
+#define STATUS_FEATURES_OK 			(1 << 3)
+#define STATUS_DEVICE_NEEDS_RESET 	(1 << 6)
+#define STATUS_FAILED				(1 << 7)
 
 
+#define VIRTQ_DESC_F_NEXT 			1
+#define VIRTQ_DESC_F_WRITE 			2
+#define VIRTQ_DESC_F_INDIRECT 		4
+#define VIRTQ_AVAIL_F_NO_INTERRUPT 	1
+#define VIRTQ_USED_F_NO_NOTIFY 		1
+
+#define QNUM 0x40
+
+//Regitradores de controle virtio mapeados em memória
 typedef enum MMIO_Regs {
 	MAGIC_VALUE = 		0x000,// R	|| Magic value 
 	VERSION = 			0X004,// R	|| Legacy device returns value 0x1.
@@ -42,7 +52,6 @@ typedef enum MMIO_Regs {
 }MMIOReg;
 
 
-#define QNUM 0x80
 
 
 typedef struct virtq_descriptor{
@@ -76,7 +85,11 @@ typedef struct virtq_used {
 typedef struct virtq {
 	VirtQDescriptor desc[QNUM];
 	VirtQAvailable av;
-	uint8 padding0[PAGE_SIZE - sizeof(VirtQDescriptor) * QNUM - sizeof(VirtQAvailable)];
+	uint8 padding0[ //padding para que virtqused tenha um alinhamento de 4 bytes
+		PAGE_SIZE*(((sizeof(VirtQDescriptor) * QNUM + sizeof(VirtQAvailable)) / PAGE_SIZE) +1)
+		- sizeof(VirtQDescriptor) * QNUM
+		- sizeof(VirtQAvailable)
+	];
 	VirtQUsed used;
 } VirtQ;
 
@@ -86,5 +99,7 @@ uint32 read_from_reg(uint64 base, MMIOReg reg);
 void write_to_reg(uint64 base, MMIOReg reg, uint32 value);
 void set_bit(uint64 base, MMIOReg reg, uint32 mask);
 void set_descriptor(VirtQDescriptor *desc, uint64 address, uint32 length, uint16 flags, uint16 next);
+void read_regs(uint32 *ptr);
+void handle_virt_int(int id);
 
 #endif
