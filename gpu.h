@@ -5,18 +5,18 @@
 //5.7.4 Device configuration layout
 
 
-#define DEVICE_WIDTH 640
-#define DEVICE_HEIGHT 480
+
 #define VIRTIO_GPU_EVENT_DISPLAY (1 << 0)
 #define F_VIRGL 0
 #define F_EDID 	1
 #define FLAG_FENCE (1 << 0)
-#define MAX_SCANOUTS 16
+#define MAX_SCANOUTS 1
+#define RESOURCE_ID 1
 
 typedef struct virtio_gpu_config { 
 	uint32 events_read; 
 	uint32 events_clear; 
-	uint32 num_scanouts; 
+	uint32 num_scanouts;
 	uint32 reserved; 
 }gpu_config;
 
@@ -221,9 +221,9 @@ typedef struct gpu_device{
 	uint32 height;
 }gpu_device;
 
-void fill_rect(gpu_device *dev, gpu_rect rect, pixel color);
-void stroke_rect(gpu_device *dev, gpu_rect rect, pixel color, uint32 size);
-
+void fill_rect(gpu_rect rect, pixel color);
+void stroke_rect(gpu_rect rect, pixel color, uint32 size);
+void fill_rect_tetris(gpu_device *dev, gpu_rect rect, pixel color);
 /*
 *	funcao que seta o dispositivo
 *	@param ptr: ponteiro para o dispositivo na memoria
@@ -231,7 +231,11 @@ void stroke_rect(gpu_device *dev, gpu_rect rect, pixel color, uint32 size);
 */
 gpu_device *setup_gpu_device(uint64 ptr);
 void init_gpu_device(gpu_device *device);
-void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 height);
+void transfer(uint32 x, uint32 y, uint32 width, uint32 height);
+void set_color(pixel*, uint32 color);
+void set_rect(gpu_rect *rect, uint32 x, uint32 y, uint32 width, uint32 height);
+
+
 
 
 #endif

@@ -2,15 +2,142 @@
 #include "defs.h"
 #include "gpu.h"
 #include "virtio.h"
+#include "game.h"
+
+#define BG_COLOR 0x666666
+#define FIELD_COLOR 0xeeeeee
+
+
+gpu_device *GPU_DEVICE;
+
+uint8 tetris_block_layout[] = 
+{
+0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
+1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
+1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
+1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,5,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
+1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
+1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
+1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
+};
+
+uint32 block_colors [7][6]= {
+	//alpha		dark out  inside    dark inside  4 points  light inside
+	{ BG_COLOR, 0x0097a7, 0x00e5ff, 0x00838f, 	 0x90caf9, 0x84ffff }, //I light blue
+	{ BG_COLOR, 0x880e4f, 0xe91e63, 0xb71c1c, 	 0x90caf9, 0xe57373 }, //Z red
+	{ BG_COLOR, 0x2e7d32, 0x00e676, 0x1b5e20, 	 0x90caf9, 0x69f0ae }, //S green
+	{ BG_COLOR, 0x9e9e3e, 0xd6d244, 0x838718, 	 0x90caf9, 0xf2f25f }, //O yellow
+	{ BG_COLOR, 0x4527a0, 0x673ab7, 0x4a148c, 	 0x90caf9, 0x9575cd }, //T purple-pinkish
+	{ BG_COLOR, 0xe64a19, 0xff8a65, 0xdd2c00, 	 0x90caf9, 0xffab91 }, //L orange
+	{ BG_COLOR, 0x0000ff, 0x304ffe, 0x1a237e, 	 0x90caf9, 0x8c9eff }  //J blue
+	//			0x283593
+};
+
+
+void draw_field(){
+	pixel color;
+	gpu_rect rect;
+	set_color(&color, FIELD_COLOR);
+	set_rect(&rect, FIELD_START, 0, FIELD_WIDTH*BLOCK_SIZE, FIELD_HEIGHT*BLOCK_SIZE);
+	stroke_rect(rect, color, 2);
+}
+
+void draw_tetris_block(uint32 x, uint32 y, piece_name shape){
+	pixel p;
+	uint8 color;
+	uint32 byte;
+	uint32 block_pixel_x, block_pixel_y, pixel_index;
+	for (uint32 line = y; line < y+BLOCK_SIZE; line++){
+		for (uint32 col = x; col < x+BLOCK_SIZE; col++){
+			block_pixel_x = col - x;
+			block_pixel_y = line - y;
+			pixel_index = block_pixel_y * BLOCK_SIZE + block_pixel_x;
+			color = tetris_block_layout[pixel_index];
+			set_color(&p, block_colors[shape][color]);
+			byte = line * DEVICE_WIDTH + col;
+			GPU_DEVICE->framebuffer[byte] = p;
+		}
+	}
+}
+
+void draw_piece(piece p){
+	uint32 x_offset, y_offset;
+	x_offset = FIELD_START + (p.x * BLOCK_SIZE);
+	y_offset = p.y * BLOCK_SIZE;
+	for (uint8 line = 0; line < TETROMINO_SIZE; line++){
+		for (uint8 col = 0; col < TETROMINO_SIZE; col++){
+			if (tetrominoes[p.name][rotate(col, line, p.rotation)]){ //se há um bloco nessa posicao
+				draw_tetris_block(x_offset + col*BLOCK_SIZE, y_offset + line*BLOCK_SIZE, p.name);
+			}
+		}
+	}
+}
+
+void clear(){
+	pixel p;
+	set_color(&p, BG_COLOR);
+	uint32 size = DEVICE_HEIGHT*DEVICE_WIDTH;
+	for (uint32 pos = 0; pos < size; pos++){
+		GPU_DEVICE->framebuffer[pos] = p; 
+	}
+}
 
 
 void print_hdr(gpu_ctrl_hdr *hdr){
-	printf("type: %d\n", hdr->type);
-	printf("flags: %d\n", hdr->flags);
-	printf("fence: %d\n", hdr->fence_id);
-	printf("ctx_id: %d\n", hdr->ctx_id);
-	printf("padding: %d\n", hdr->padding);
-	printf("************************************************\n");
+	printf("HEADER: \n");
+	printf("\ttype: %d\n", hdr->type);
+	printf("\tflags: %d\n", hdr->flags);
+	printf("\tfence: %d\n", hdr->fence_id);
+	printf("\tctx_id: %d\n", hdr->ctx_id);
+	printf("\tpadding: %d\n", hdr->padding);
+}
+
+void print_rect(gpu_rect rect){
+	printf("RECTANGLE:\n");
+	printf("\tx: %d\n", rect.x);
+	printf("\ty: %d\n", rect.y);
+	printf("\th: %d\n", rect.height);
+	printf("\tw: %d\n", rect.width);
+}
+
+void print_gpu_display_one(gpu_display_one display){
+	printf("DISPLAY ONE:\n");
+	printf("\tenabled: %d\n", display.enabled);
+	printf("\tflags: %d\n",display.flags);
+	print_rect(display.r);
+}
+
+void print_display_info(gpu_resp_display_info *info){
+	printf("DISPLAY INFO: \n");
+	print_hdr(&(info->hdr));
+	for (int i = 0; i < MAX_SCANOUTS; i++){
+		print_gpu_display_one(info->pmodes[i]);
+	}
 }
 
 void set_resource_flush(resource_flush *flush, gpu_ctrl_hdr hdr, gpu_rect rect, uint32 res_id, uint32 padding){
@@ -63,11 +190,11 @@ void set_attach_backing(attach_backing *at, gpu_ctrl_hdr hdr, uint32 res_id, uin
 	at->nr_entries = n_entries;
 }
 
-void set_color(pixel *p, uint8 r, uint8 g, uint8 b, uint8 a){
-	p->r = r;
-	p->g = g;
-	p->b = b;
-	p->a = a;
+void set_color(pixel *p, uint32 color){
+	p->r = color >> 16;
+	p->g = (color >> 8) & 0x00ff;
+	p->b = color & 0x0000ff;
+	p->a = 0xff;
 }
 
 void set_rect(gpu_rect *rect, uint32 x, uint32 y, uint32 w, uint32 h){
@@ -77,34 +204,54 @@ void set_rect(gpu_rect *rect, uint32 x, uint32 y, uint32 w, uint32 h){
 	rect->width = w;
 }
 
-void fill_rect(gpu_device *dev, gpu_rect rect, pixel color){
+void fill_rect_tetris(gpu_device *dev, gpu_rect rect, pixel color){
 	uint32 byte;
+	pixel preto;
+	set_color(&preto, 0x000000);
 	for (uint32 row = rect.y; row < rect.y + rect.height; row++){
 		for (uint32 col = rect.x; col < rect.x + rect.width; col++){
 			byte = row * dev->width + col;
-			dev->framebuffer[byte] = color;
+			if (row == rect.y ||
+				col == rect.x ||
+				row == rect.y + rect.height -1 ||
+				col == rect.x + rect.width  -1
+			){
+				dev->framebuffer[byte] = preto;
+			}else{
+				dev->framebuffer[byte] = color;
+			}
 		}
 	}
 }
 
-void stroke_rect(gpu_device *dev, gpu_rect rect, pixel color, uint32 size){
+void fill_rect(gpu_rect rect, pixel color){
+	uint32 byte;
+	for (uint32 row = rect.y; row < rect.y + rect.height; row++){
+		for (uint32 col = rect.x; col < rect.x + rect.width; col++){
+			byte = row * GPU_DEVICE->width + col;
+			GPU_DEVICE->framebuffer[byte] = color;
+		}
+	}
+}
+
+void stroke_rect(gpu_rect rect, pixel color, uint32 size){
 	gpu_rect new_rect;
 
 	//top
 	set_rect(&new_rect, rect.x, rect.y, rect.width, size);
-	fill_rect(dev,new_rect,color);
+	fill_rect(new_rect,color);
 
 	//bot
 	set_rect(&new_rect, rect.x, rect.y+rect.height, rect.width, size);
-	fill_rect(dev, new_rect, color);
+	fill_rect(new_rect, color);
 
 	//left
 	set_rect(&new_rect, rect.x, rect.y, size, rect.height);
-	fill_rect(dev, new_rect, color);
+	fill_rect(new_rect, color);
 
 	//right
 	set_rect(&new_rect, rect.x+rect.width, rect.y, size, rect.height+size);
-	fill_rect(dev, new_rect, color);
+	fill_rect(new_rect, color);
 }
 
 /*
@@ -113,19 +260,22 @@ void stroke_rect(gpu_device *dev, gpu_rect rect, pixel color, uint32 size){
 */
 
 void init_gpu_device(gpu_device *device){
-	pixel black_graysh;
+	uint16 head;
+	pixel color;
 	gpu_rect rect;
-	set_rect(&rect, 0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
-	set_color(&black_graysh, 2,2,2,255);
-	fill_rect(device, rect, black_graysh);
-
 	gpu_ctrl_hdr hdr;
+
+	set_rect(&rect, 0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
+	set_color(&color, 0xEEeeEE); //0xEB3E1B
+	fill_rect(rect, color);
+
+
 	set_header(&hdr, VIRTIO_GPU_CMD_RESOURCE_CREATE_2D, 0, 0, 0, 0);
 	resource_create_2d *res = (resource_create_2d*) alloc(1);
 	set_res_create_2d(
 		res,
 		hdr,
-		1,
+		RESOURCE_ID,
 		VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM,
 		device->width,
 		device->height
@@ -146,15 +296,17 @@ void init_gpu_device(gpu_device *device){
 		VIRTQ_DESC_F_WRITE,
 		0
 	);
-	//device->idx++;
-	//device->queue->av.index;
-	uint16 head = device->idx;
+
+
+	head = device->idx;
 	device->queue->desc[device->idx] = c2d;
 	device->idx = (device->idx + 1) % QNUM;
 	device->queue->desc[device->idx] = c2d_response;
 	device->idx = (device->idx + 1) % QNUM;
 	device->queue->av.ring[device->queue->av.index % QNUM] = head;
-	device->queue->av.index = (device->queue->av.index + 1) % QNUM; //wrapping_add(1) ???
+	device->queue->av.index = (device->queue->av.index + 1); //wrapping_add(1) ???
+
+
 
 	//--------------------------------------------------------------//
 	//passo 2
@@ -170,7 +322,7 @@ void init_gpu_device(gpu_device *device){
 		0,
 		0
 	);
-	set_attach_backing(attach, hdr, 1, 1);
+	set_attach_backing(attach, hdr, RESOURCE_ID, 1);
 	set_mem_entry(
 		memory_entry,
 		(uint64)device->framebuffer,
@@ -223,7 +375,7 @@ void init_gpu_device(gpu_device *device){
 		0
 	);
 	set_rect(&rect, 0, 0, device->width, device->height);
-	set_setscanout(scanout, hdr, rect, 0, 1);
+	set_setscanout(scanout, hdr, rect, 0, RESOURCE_ID);
 	VirtQDescriptor desc_sso, desc_sso_resp;
 	set_descriptor(
 		&desc_sso,
@@ -260,7 +412,7 @@ void init_gpu_device(gpu_device *device){
 		0
 	);
 	set_rect(&rect, 0, 0, device->width, device->height);
-	set_transfer_to_host(transfer, hdr, rect, 0, 1, 0);
+	set_transfer_to_host(transfer, hdr, rect, 0, RESOURCE_ID, 0);
 	VirtQDescriptor desc_t2h, desc_t2h_response;
 	gpu_ctrl_hdr *response4 = (gpu_ctrl_hdr*)alloc(1);
 	set_descriptor(
@@ -298,7 +450,7 @@ void init_gpu_device(gpu_device *device){
 		0
 	);
 	set_rect(&rect, 0, 0, device->width, device->height);
-	set_resource_flush(flush, hdr, rect, 1, 0);
+	set_resource_flush(flush, hdr, rect, RESOURCE_ID, 0);
 
 	VirtQDescriptor desc_rf, desc_rf_resp;
 	gpu_ctrl_hdr *response5 = (gpu_ctrl_hdr*)alloc(1);
@@ -327,12 +479,7 @@ void init_gpu_device(gpu_device *device){
 
 	//RUN THE QUEUE
 	write_to_reg(device->dev, QUEUE_NOTIFY, 0);
-	while(response1->type == 0);
-	print_hdr(response1);
-	print_hdr(response2);
-	print_hdr(response3);
-	print_hdr(response4);
-	print_hdr(response5);
+	while(device->queue->av.index != device->queue->used.index);
 }
 
 
@@ -343,28 +490,25 @@ void init_gpu_device(gpu_device *device){
 *	@return 0 ou o endereco do device para caso o dispositivo falhe ou não na inicialização
 */
 gpu_device* setup_gpu_device(uint64 ptr){
-
 	uint32 idx = (ptr - VIRTIO_START) >> 12;
 
 	//reset device -- writing 0 to status register
 	write_to_reg(ptr, STATUS, 0);
 	//set ack bit
-	set_bit(ptr, STATUS, (1 << 0));
+	set_bit(ptr, STATUS, STATUS_ACKNOWLEDGE);
 	//set driver status bit
-	set_bit(ptr, STATUS, (1 << 1));
+	set_bit(ptr, STATUS, STATUS_DRIVER);
 	uint32 host_feat = read_from_reg(ptr, HOST_FEATURES);
 	write_to_reg(ptr, GUEST_FEATURES, host_feat);
 
 	//setup device specific
 	write_to_reg(ptr, QUEUE_NUM, QNUM);
-	uint32 num_pages = (sizeof(VirtQ) + PAGE_SIZE - 1)/ PAGE_SIZE;
+	uint32 num_pages = 1+ ((sizeof(VirtQ))/ PAGE_SIZE);
 
 	//SELECT THE QUEUE
 	write_to_reg(ptr, QUEUE_SEL, 0X0);
 	
 	VirtQ *queue = alloc(num_pages);
-	printf("numpages: %d\n", num_pages);
-	printf("queue: %p\n", queue);
 	uint32 q_pfn = ((uint64)queue)/PAGE_SIZE;
 
 	//INFORM PAGE_SIZE
@@ -372,22 +516,24 @@ gpu_device* setup_gpu_device(uint64 ptr){
 	//INFORM THE PAGE WHERE THE FIRST QUEUE IS
 	write_to_reg(ptr, QUEUE_PFN, q_pfn);
 	//INFORM THAT EVERYTHING IS OK
-	set_bit(ptr, STATUS, (1<<2));
+	set_bit(ptr, STATUS, STATUS_DRIVER_OK);
 
-	num_pages = (PAGE_SIZE*2+DEVICE_WIDTH*DEVICE_HEIGHT*sizeof(pixel))/PAGE_SIZE;
-	pixel *fb = alloc(num_pages);
+	num_pages = 1 + ((DEVICE_WIDTH*DEVICE_HEIGHT*sizeof(pixel))/PAGE_SIZE);
+	pixel *fb = alloc(num_pages*2);
 	gpu_device *device = (gpu_device*)alloc(1);
 	device->queue = queue;
 	device->dev = ptr;
 	device->idx = 0;
 	device->ack_used_idx = 0;
-	device->framebuffer = fb;
+	device->framebuffer = fb ;//(pixel*)((uint64)fb + num_pages*PAGE_SIZE);
 	device->width = DEVICE_WIDTH;
 	device->height = DEVICE_HEIGHT;
+
+	GPU_DEVICE = device;
 	return device;
 }
 
-void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 height){
+void transfer(uint32 x, uint32 y, uint32 width, uint32 height){
 	//*******************************************************************************************//
 	//step 4
 	//transfer to host
@@ -403,7 +549,7 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		0,
 		0
 	);
-	set_rect(&rect, x, y, width, height);
+	set_rect(&rect, x, y, width+x, height+y);
 	set_transfer_to_host(transfer, hdr, rect, 0, 1, 0);
 	VirtQDescriptor desc_t2h, desc_t2h_response;
 	gpu_ctrl_hdr *response4 = (gpu_ctrl_hdr*)alloc(1);
@@ -412,7 +558,7 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		(uint64)transfer,
 		sizeof(transfer_to_host_2d),
 		VIRTQ_DESC_F_NEXT,
-		(device->idx + 1)%QNUM
+		(GPU_DEVICE->idx + 1)%QNUM
 	);
 	set_descriptor(
 		&desc_t2h_response,
@@ -421,13 +567,13 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		VIRTQ_DESC_F_WRITE,
 		0
 	);
-	head = device->idx;
-	device->queue->desc[device->idx] = desc_t2h;
-	device->idx = (device->idx + 1) % QNUM;
-	device->queue->desc[device->idx] = desc_t2h_response;
-	device->idx = (device->idx + 1) % QNUM;
-	device->queue->av.ring[device->queue->av.index % QNUM] = head;
-	device->queue->av.index = (device->queue->av.index + 1) % QNUM; //wrapping_add(1) ???
+	head = GPU_DEVICE->idx;
+	GPU_DEVICE->queue->desc[GPU_DEVICE->idx] = desc_t2h;
+	GPU_DEVICE->idx = (GPU_DEVICE->idx + 1) % QNUM;
+	GPU_DEVICE->queue->desc[GPU_DEVICE->idx] = desc_t2h_response;
+	GPU_DEVICE->idx = (GPU_DEVICE->idx + 1) % QNUM;
+	GPU_DEVICE->queue->av.ring[GPU_DEVICE->queue->av.index % QNUM] = head;
+	GPU_DEVICE->queue->av.index = (GPU_DEVICE->queue->av.index + 1) ; 
 
 	//****************************************************************************************//
 	//STEP 5 
@@ -441,7 +587,7 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		0,
 		0
 	);
-	set_rect(&rect, x, y, width, height);
+	set_rect(&rect, x, y, width+x, height+y);
 	set_resource_flush(flush, hdr, rect, 1, 0);
 
 	VirtQDescriptor desc_rf, desc_rf_resp;
@@ -451,7 +597,7 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		(uint64)flush,
 		sizeof(resource_flush),
 		VIRTQ_DESC_F_NEXT,
-		(device->idx + 1) % QNUM
+		(GPU_DEVICE->idx + 1) % QNUM
 	);
 	set_descriptor(
 		&desc_rf_resp,
@@ -460,15 +606,20 @@ void transfer(gpu_device *device, uint32 x, uint32 y, uint32 width, uint32 heigh
 		VIRTQ_DESC_F_WRITE,
 		0
 	);
-	head = device->idx;
-	device->queue->desc[device->idx] = desc_rf;
-	device->idx = (device->idx + 1) % QNUM;
-	device->queue->desc[device->idx] = desc_rf_resp;
-	device->idx = (device->idx + 1) % QNUM;
-	device->queue->av.ring[device->queue->av.index % QNUM] = head;
-	device->queue->av.index = (device->queue->av.index + 1) % QNUM; //wrapping_add(1) ???
+	head = GPU_DEVICE->idx;
+	GPU_DEVICE->queue->desc[GPU_DEVICE->idx] = desc_rf;
+	GPU_DEVICE->idx = (GPU_DEVICE->idx + 1) % QNUM;
+	GPU_DEVICE->queue->desc[GPU_DEVICE->idx] = desc_rf_resp;
+	GPU_DEVICE->idx = (GPU_DEVICE->idx + 1) % QNUM;
+	GPU_DEVICE->queue->av.ring[GPU_DEVICE->queue->av.index % QNUM] = head;
+	GPU_DEVICE->queue->av.index = (GPU_DEVICE->queue->av.index + 1); 
 
 
 	//RUN THE QUEUE
-	write_to_reg(device->dev, QUEUE_NOTIFY, 0);
+	write_to_reg(GPU_DEVICE->dev, QUEUE_NOTIFY, 0);
+	while (GPU_DEVICE->queue->av.index != GPU_DEVICE->queue->used.index);
+	dealloc(transfer);
+	dealloc(response4);
+	dealloc(response5);
+	dealloc(flush);
 }
