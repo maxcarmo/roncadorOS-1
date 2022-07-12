@@ -3,6 +3,7 @@
 #include "console.h"
 #include "riscv.h"
 #include "memlayout.h"
+#include "game.h"
 
 extern void mvector(void); // Rotina q salva os registradores em assembly
 extern void msg_syscall(int);
@@ -16,7 +17,7 @@ main() {
     // get_mstatus_mpie(); // Erro porque estamos no modo-S tentando acessar mstatus (exclusivo do modo-M)
     // char *p_erro = (char*) 0x2;  //tval recebe o valor 0x2
     // *p_erro = 1; //Exceção síncrona
-    msg_syscall(10);
+    //msg_syscall(10);
     for(;;);
 }
 
@@ -69,7 +70,9 @@ entry() {
     *mtimecmp = *mtime + 10000000;
     printf("Valor de CLINT_MTIMECMP: %p\n", CLINT_MTIMECMP(0));
     printf("Descoberta de dispositivos...\n");
-    virtio_probe(); 
+    virtio_probe();
+    //init_game();
+    
     asm volatile("mret"); // retorna para a função main no modo-S
 }
 
