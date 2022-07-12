@@ -150,7 +150,7 @@ alloc(int pages) {
 }
 
 void dealloc(void *address){
-    uint8 desc_number = (((uint64) address) - ((uint64) alloc_start))/PAGE_SIZE;
+    uint32 desc_number = (((uint64) address) - ((uint64) alloc_start))/PAGE_SIZE;
     uint8 *desc = (uint8*) (HEAP_START + desc_number);
     if (free_page(*desc)) return; //se a pagina está livre, retorna
     while(!last_page(*desc)){
