@@ -3,6 +3,7 @@
 #include "defs.h"
 #include "memlayout.h"
 #include "console.h"
+#include "virtio.h"
 
 /* 
 tval (trap value) pode conter: 
@@ -33,8 +34,8 @@ mtrap(uint64 tval,
             case 8:
                 syscall_number = tf->regs[16];
                 if (syscall_number == 1) {
-                    printf("<exceção do modo-U> Olá da System Call de número %d."
-                            "Parâmetro: %d\n", syscall_number, tf->regs[9]);
+                    // printf("<exceção do modo-U> Olá da System Call de número %d."
+                    //         "Parâmetro: %d\n", syscall_number, tf->regs[9]);
                 }
                 tf->epc = tf->epc + 4;
                 break;
@@ -82,12 +83,12 @@ mtrap(uint64 tval,
             case 7: 
                 // A interrupção do temporizador sempre é atendida pelo modo-M
                 // (não há como delegar para o modo-S)
-                printf("\u23F0 Interrupção do temporizador  Modo-M\n");
+                //printf("\u23F0 Interrupção do temporizador  Modo-M\n");
                 p = scheduler();
                 // mscratch vai apontar o TF do processo a ser executado. 
                 // Assim, o contexto restaurado em mvector será o do processo
                 reg = (uint64) &(p->tf);
-                printf("Processo reinicia no endereço (va):%p\n", p->tf.epc);
+                // printf("Processo reinicia no endereço (va):%p\n", p->tf.epc);
                 w_mscratch(reg);
                 
                 // Preparar para entrar no modo-U (mstatus.MPP = U)
@@ -103,6 +104,9 @@ mtrap(uint64 tval,
                 // Obtém  a IRQ que causou a interrupção
                 irq = plic_claim();
                 switch(irq) {
+                    case 0:
+                        printf(PINK_RED "NADAAAAA\n" CR);
+                        break;
                     case 1:
                     case 2:
                     case 3:
@@ -111,9 +115,10 @@ mtrap(uint64 tval,
                     case 6:
                     case 7:
                     case 8:
-                        printf(PINK_RED "VIRTIO DEVICE AAAA\n" CR);
+                        handle_virt_int(irq);
                         break;
                     case UART_IRQ:
+                        printf(PINK_RED "UART DEVICE AAAA\n" CR);
                         console_handler();
                         break;
                     default:
