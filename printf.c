@@ -73,6 +73,24 @@ void printptr(uint64 *ptr){
    }
 }
 
+
+void printunsl(uint64 val){
+    char s[64];
+    int i = 0;
+    if (val == 0){
+        s[i++] = '0';
+    }
+    while(val){
+        s[i++] = digits[val%10];
+        val /= 10;
+    }
+    while(i > 0) {
+        uartputc(s[--i]);
+    }
+}
+
+
+
 void printf(char *s, ...){
     va_list ap; // argument pointer 
     int c;
@@ -114,6 +132,9 @@ void printf(char *s, ...){
                     break;
                 case 'u':
                     printuns(va_arg(ap, uint32));
+                    break;
+                case 'h':
+                    printunsl(va_arg(ap, uint64));
                     break;
                 default:
                     printf("ERRO: printf\nArgumento inesperado\n"); 
