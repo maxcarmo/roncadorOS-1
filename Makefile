@@ -50,7 +50,8 @@ OBJ = \
 	virtio.o \
 	rng.o \
 	game.o \
-	keyboard.o
+	keyboard.o \
+	math.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
 %.o: %.c
@@ -73,7 +74,10 @@ run: kernel
 	-device $(KEYBOARD) \
 	-kernel kernel		
 debug: kernel
-	$(QEMU) -machine virt -m $(RAM) -nographic -serial mon:stdio -bios none -device $(GPU) \
+	$(QEMU) -machine virt -m $(RAM) -nographic -serial mon:stdio -bios none \
+	-device $(RANDOM) \
+	-device $(GPU) \
+	-device $(KEYBOARD) \
 	-gdb tcp::1234 -S -kernel kernel
 clean: 
 	rm -rf kernel
