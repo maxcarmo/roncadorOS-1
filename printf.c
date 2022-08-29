@@ -6,15 +6,18 @@ static char *digits = "0123456789abcdef";
 
 
 void printdouble(double val){
+    //printa fixamente com uma precisao de 4 valores apos a virgula
+    //no momento, para alterar a precisao, é so alterar a variavel
     int precisao = 4;
     for (int i = 0; i < precisao; i++){
         val *= 10;
     }
-    int num = val; //ate 2 casas apos virgula
+    int num = val; 
     int neg = 0;
+    //se  o numero for negativo
     if (num < 0){
-        num *= -1;
-        neg = 1;
+        num *= -1; //deixa ele positivo
+        neg = 1; //e marca a flag como true
     }
     char s[32];
     int i = 0;
