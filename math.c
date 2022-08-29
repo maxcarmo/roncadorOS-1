@@ -119,10 +119,7 @@ double root(double n){
   return mid;
 }
 
-// double abs(double x){
-//     if (x > 0) return x;
-//     return x * -1;
-// }
+
 
 
 double distance_points(int x1, int y1, int x2, int y2){

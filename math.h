@@ -41,10 +41,7 @@ double sine(double x);
 * @return distancia entre P1 e P2
 */
 double distance_points(int x1, int y1, int x2, int y2);
-/*
-* @return valor absoluto de x
-*/
-double abs(double x);
+
 /*
 * @return x arrendodado para cima
 */
