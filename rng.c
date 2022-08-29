@@ -10,20 +10,28 @@ uint32 get_random_number(uint32 start, uint32 end){
     uint32 random_number;
     uint32 *buffer = (uint32*) alloc(1);
     VirtQDescriptor desc;
+
+    //seta o endereco do buffer para o dispositivo enxergar
     set_descriptor(&desc, (uint64)buffer, sizeof(uint32), VIRTQ_DESC_F_WRITE, 0);
 
+    //atualiza os indices da virtq
     uint32 head = RNG_DEVICE.idx;
     RNG_DEVICE.queue->desc[RNG_DEVICE.idx] = desc;
     RNG_DEVICE.idx = (RNG_DEVICE.idx +1) % QNUM;
     RNG_DEVICE.queue->av.ring[RNG_DEVICE.queue->av.index % QNUM] = head;
     RNG_DEVICE.queue->av.index = RNG_DEVICE.queue->av.index +1;
-    printf("av: %d\n", RNG_DEVICE.queue->av.index);
 
+    //informa para o dispositivo que tem buffer na fila
     write_to_reg(RNG_DEVICE.address, QUEUE_NOTIFY, 0);
+
+    //espera o dispositivo respondar em um while
+    //talvez pode ser alterado por uma interrupção
     while (RNG_DEVICE.queue->av.index != RNG_DEVICE.queue->used.index);
-    printf("used idx: %d\n", RNG_DEVICE.queue->used.index);
+    //recupero o que foi escrito no buffer
     random_number = *buffer;
     //desaloca buffer
+    dealloc(buffer);
+    //retorno um numero aleatorio dentro do range
     return (random_number % (end - start)) + start;
 }
 
