@@ -4,6 +4,46 @@
 
 static char *digits = "0123456789abcdef";
 
+
+void printdouble(double val){
+    int precisao = 4;
+    for (int i = 0; i < precisao; i++){
+        val *= 10;
+    }
+    int num = val; //ate 2 casas apos virgula
+    int neg = 0;
+    if (num < 0){
+        num *= -1;
+        neg = 1;
+    }
+    char s[32];
+    int i = 0;
+    if (num == 0){
+        s[i++] = '0';
+    }
+    while(num){
+        s[i++] = digits[num%10];
+        num /= 10;
+    }
+    while (i < precisao){
+        s[i++] = '0';
+    }
+    if (i == precisao){
+        s[i++] = '0';
+    }
+    if (neg){
+        s[i++] = '-';
+    }
+    while(i > precisao) {
+        uartputc(s[--i]);
+    }
+    uartputc('.');
+    while(i>0){
+        uartputc(s[--i]);
+    }
+}
+
+
 void printuns(unsigned int val){
     char s[32];
     int i = 0;
@@ -135,6 +175,12 @@ void printf(char *s, ...){
                     break;
                 case 'h':
                     printunsl(va_arg(ap, uint64));
+                    break;
+                case 'c':
+                    uartputc(va_arg(ap, int));
+                    break;
+                case 'f':
+                    printdouble(va_arg(ap, double));
                     break;
                 default:
                     printf("ERRO: printf\nArgumento inesperado\n"); 
