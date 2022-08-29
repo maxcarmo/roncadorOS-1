@@ -298,7 +298,7 @@ kvminit(){
     kvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W);
     // os 8 dispositivos que o nosso SO reconhece estão separados por endereços 
     // de 0x1000 (4096) começando em 0x10001000 
-    // kvmmap(MMIO_VIRTIO_START, MMIO_VIRTIO_START, 0x8000, PTE_R | PTE_W);
+    kvmmap(0x10001000 , 0x10001000 , 0x8000, PTE_R | PTE_W);
 
     //Configura o trap_frame para a CPU 0
     w_mscratch((uint64)&trap_frame[0]); 
