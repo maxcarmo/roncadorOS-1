@@ -31,6 +31,14 @@ mtrap(uint64 tval,
         switch(cause) {
             // syscall vinda do modo-u: a cpu estava no modo-S quando 
             // invocou a syscall
+            case 2:
+                printf(
+                    "trap: Illegal Instruction CPU#:%d -> EPC:%p tval:%p\n" 
+                    CR,
+                    (int) tf->hartid, (uint64 *)tf->epc, (uint64 *)tval
+                );
+                break;
+
             case 8:
                 syscall_number = tf->regs[16];
                 if (syscall_number == 1) {
