@@ -17,7 +17,7 @@ typedef struct virtio_gpu_config {
 	uint32 events_read; 
 	uint32 events_clear; 
 	uint32 num_scanouts;
-	uint32 reserved; 
+	uint32 reserved;
 }gpu_config;
 
 
@@ -201,12 +201,12 @@ typedef struct update_cursor {
 
 
 
-typedef struct pixel {
-	uint8 r;
-	uint8 g;
-	uint8 b;
-	uint8 a;
-}pixel;
+// typedef struct pixel {
+// 	uint8 r;
+// 	uint8 g;
+// 	uint8 b;
+// 	uint8 a;
+// }pixel;
 
 
 
@@ -216,14 +216,11 @@ typedef struct gpu_device{
 	uint64 dev;
 	uint16 idx;
 	uint16 ack_used_idx;
-	pixel *framebuffer;
+	uint32 *framebuffer;
 	uint32 width;
 	uint32 height;
 }gpu_device;
 
-void fill_rect(gpu_rect rect, pixel color);
-void stroke_rect(gpu_rect rect, pixel color, uint32 size);
-void fill_rect_tetris(gpu_device *dev, gpu_rect rect, pixel color);
 /*
 *	funcao que seta o dispositivo
 *	@param ptr: ponteiro para o dispositivo na memoria
@@ -232,8 +229,16 @@ void fill_rect_tetris(gpu_device *dev, gpu_rect rect, pixel color);
 gpu_device *setup_gpu_device(uint64 ptr);
 void init_gpu_device(gpu_device *device);
 void transfer(uint32 x, uint32 y, uint32 width, uint32 height);
-void set_color(pixel*, uint32 color);
+// void set_color(pixel*, uint32 color);
 void set_rect(gpu_rect *rect, uint32 x, uint32 y, uint32 width, uint32 height);
+void draw_line(int x1, int y1, int x2, int y2);
+void bg_color(uint32 color);
+void fill_color(uint32 color);
+void stroke_color(uint32 color);
+void stroke_weigth(uint32 weight);
+void draw_rect(int x, int y, int w, int h);
+void draw_circle(int x, int y, int r);
+void draw_triangle(int x1, int y1, int x2, int y2, int x3, int y3);
 
 
 
