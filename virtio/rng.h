@@ -1,4 +1,8 @@
-#include "types.h"
+#ifndef RNG_H
+#define RNG_H
+
+
+#include "../types.h"
 #include "virtio.h"
 
 void setup_rng(uint64 addr);
@@ -12,3 +16,6 @@ typedef struct rng_device{
     VirtQ *queue;
     uint32 idx;
 }rng_device;
+
+
+#endif

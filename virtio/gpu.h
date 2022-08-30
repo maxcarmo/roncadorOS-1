@@ -1,9 +1,7 @@
 #ifndef GPU_H
 #define GPU_H
-#include "types.h"
-#include "virtio.h"
 //5.7.4 Device configuration layout
-
+#include "virtio.h"
 
 
 #define VIRTIO_GPU_EVENT_DISPLAY (1 << 0)
@@ -201,14 +199,6 @@ typedef struct update_cursor {
 
 
 
-// typedef struct pixel {
-// 	uint8 r;
-// 	uint8 g;
-// 	uint8 b;
-// 	uint8 a;
-// }pixel;
-
-
 
 
 typedef struct gpu_device{
@@ -239,7 +229,7 @@ void stroke_weigth(uint32 weight);
 void draw_rect(int x, int y, int w, int h);
 void draw_circle(int x, int y, int r);
 void draw_triangle(int x1, int y1, int x2, int y2, int x3, int y3);
-
+void clear();
 
 
 

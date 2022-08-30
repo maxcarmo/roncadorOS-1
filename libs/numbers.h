@@ -1,4 +1,8 @@
-#include "types.h"
+#ifndef NUMBERS_H
+#define NUMBERS_H
+
+
+#include "../types.h"
 
 #define NUMBER_HEIGHT 44
 #define NUMBER_WIDTH 36
@@ -467,3 +471,6 @@ uint8 numbers[10][NUMBER_LENGTH] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1   
     }
 };
+
+
+#endif

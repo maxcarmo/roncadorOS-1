@@ -1,8 +1,6 @@
-#include "types.h"
-#include "virtio.h"
 #include "keyboard.h"
-#include "defs.h"
-#include "input-event-codes.h"
+#include "../defs.h"
+#include "../libs/input-event-codes.h"
 
 
 #define TOTAL_EVENT_BUFFER 0x40

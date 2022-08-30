@@ -1,7 +1,6 @@
-#include "types.h"
-#include "virtio.h"
 #include "rng.h"
-#include "defs.h"
+#include "virtio.h"
+#include "../defs.h"
 
 
 rng_device RNG_DEVICE;

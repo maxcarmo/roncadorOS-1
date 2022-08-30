@@ -1,37 +1,39 @@
-#include "types.h"
-#include "defs.h"
+#include "../types.h"
+#include "../defs.h"
+#include "../virtio/keyboard.h"
+#include "../virtio/rng.h"
+#include "../libs/input-event-codes.h"
+#include "../libs/time.h"
 #include "game.h"
-#include "keyboard.h"
-#include "memlayout.h"
-#include "rng.h"
-#include "input-event-codes.h"
 
 
 
 
-
-//defines the time wich the piece updates going down
+//define o intervalo de atualizacao em que a peca se move
 #define UPDATE_TIME 1000
 
-//defines the frame update time
+//cada frame fica FRAME_TIME ms na tela
 #define FRAME_TIME 50
 
-//in wich loop we update the piece
+//define o loop em que a peca vai ser atualizada
 #define UPDATE_LOOP (UPDATE_TIME/FRAME_TIME)
 
+//para pegar a proxima peca disponivel
 piece get_next_piece();
 
+//estados que o jogo pode ter
 typedef enum states {RUNNING, PAUSED, OVER, MENU} STATE;
 
+//variaveis do jogo
 struct GAME{
-    uint8 has_switched;
-    STATE state; 
-    uint8 loop_counter;
-    uint8 *field;
-    piece current_piece, next_piece[NEXT_MAX], shadow_piece, hold_piece;
-    uint32 next_idx;
-    uint32 score;
-    uint64 dt;
+    uint8 has_switched; //se o jogar mudou de peca, ele nao pode mudar de novo ate a atual se encaixar
+    STATE state; //estado do jogo
+    uint8 loop_counter; //loop counter 0 - UPDATE LOOP
+    uint8 *field; //campo de blocos do jogo
+    piece current_piece, next_piece[NEXT_MAX], shadow_piece, hold_piece; //pecas disponiveis no jogo
+    uint32 next_idx; //indice da proxima peca a ser escolhida
+    uint32 score; //score do jogo
+    uint64 dt; //tempo que o ultimo frame levou
 }game;
 
 
@@ -131,7 +133,7 @@ uint32 rotate(uint32 x, uint32 y, uint32 rotation, piece_shape shape){
     return 0;
 }
 
-
+//deixa todos os blocos do campo como empty
 void reset_field(){
     for (uint32 i = 0; i < FIELD_HEIGHT*FIELD_WIDTH; i++){
         game.field[i] = EMPTY;
@@ -177,6 +179,7 @@ uint8 piece_fit(piece p, int walk_x, int walk_y, int rot){
     return 1;
 }
 
+//funcao para rotacionar um peca
 int rotate_piece(piece *p){
     if (piece_fit(*p, 0,0,1)){
         (p->rotation)++;
@@ -185,6 +188,7 @@ int rotate_piece(piece *p){
     return 0;
 }
 
+//funcao para mover uma peca para baixo
 int move_piece_down(piece *p){
     if (piece_fit(*p, 0, 1, 0)){
         (p->y)++;
@@ -193,7 +197,14 @@ int move_piece_down(piece *p){
     return 0;
 }
 
+/*
+* funcao para mover uma peca para esquerda ou direta
+* @param *p: ponteiro para a peca
+* @param direction: direcao que a peca vai, -1 esquerda, 1 direita
+* @return true ou false para se a peca moveu ou nao
+*/
 int move_piece_left_or_right(piece *p, int direction){
+    if (direction != -1 && direction != 1) return 0;
     if (piece_fit(*p, direction, 0, 0)){
         p->x += direction;
         return 1;
@@ -201,12 +212,18 @@ int move_piece_left_or_right(piece *p, int direction){
     return 0;
 }
 
+//realiza um hard drop na peca
+//isto é, move a peca para baixo ate onde der
 int hard_drop(piece *p){
     int dropped = 0;
     while(move_piece_down(p)) dropped++;
     return dropped;
 }
 
+
+//funcao que marca uma certa peca no campo
+//quando a peca eh encaixada ela tem que ser marcada no campo
+//essa funcao eh responsavel por isso
 void mark_piece_in_field(piece p){
     uint32 piece_offset = p.y * FIELD_WIDTH + p.x;
     uint32 piece_index;
@@ -223,16 +240,14 @@ void mark_piece_in_field(piece p){
     }
 }
 
-void wait(uint32 ms){
-    uint64 time = (*(uint64*) CLINT_MTIME) / 10000;
-    uint64 new_time = time;
-    while (new_time - time < ms){
-        new_time = (*(uint64*) CLINT_MTIME) / 10000;
-    }
-}
 
+//essa funcao é responsavel por trocar a peca atual do usuario
+//por uma peca que esta no hold
+//se nenhuma peca estiver no hold
+//entao é pego a proxima peca disponivel
+//e a peca atual vai para o hold
 void switch_hold(){
-    if (game.has_switched) return;
+    if (game.has_switched) return; //se o usuario acabou de trocar
     piece temp = game.current_piece;
     if (game.hold_piece.shape == EMPTY){
         game.current_piece = get_next_piece();
@@ -243,12 +258,16 @@ void switch_hold(){
     game.hold_piece.x = PIECE_START;
     game.hold_piece.y = 0;
     game.hold_piece.rotation = 0;
+    //a peca O é a unica que comeca ocupando a terceira linha
+    //como todas as outras comecam ocupando a segunda linha
+    //entao soma-se 1 na posicao delas
     if (game.hold_piece.shape != O){
         game.hold_piece.y++;
     }
     game.has_switched = true;
 }
 
+//funcao que devolve uma nova peca aleatoria
 piece new_piece(){
     piece p;
     p.shape = get_random_number(0, NUM_OF_TETROMINOS);
@@ -344,6 +363,7 @@ void treat_keys(){
     }
 }
 
+//funcao que atualiza se deu game over ou nao
 void update_game_over_status(){
     //SE HÁ ALGUM BLOCO NO START_OFFSET
     uint32 range = START_OFFSET*FIELD_WIDTH;
@@ -355,28 +375,106 @@ void update_game_over_status(){
     }
 }
 
+
+//Essa funcao eh responsavel por checar se fez pontos ou nao.
+//Ela eh chamada toda vez que uma peca eh encaixada no gamefield
+// @param piece_height: altura da peca
+// @return retorna a quantidade de pontos feito
 int check_line(int piece_height){
     int marked_offset, unmarked_offset;
-    int lines_marked = 0;
-    int marked;
-    int lines_unmarked = 0;
-    int field_index;
-    int line_start_check = TETROMINO_SIZE - 1;
-    if (piece_height + TETROMINO_SIZE > FIELD_HEIGHT){
-        line_start_check = FIELD_HEIGHT - piece_height - 1;
+    int lines_marked = 0;   //linhas marcadas como ponto
+    int lines_unmarked = 0; //linhas marcadas como nao ponto
+    int marked; //usado para saber se a linha do loop anterior foi marcada como ponto
+    int field_index; 
+    int line_start_check = TETROMINO_SIZE - 1; //de qual linha do tetromino comecara o check
+    if (piece_height + TETROMINO_SIZE > FIELD_HEIGHT){ //se o bloco do tetromino passar o field
+        line_start_check = FIELD_HEIGHT - piece_height - 1; //entao atualiza para um numero compativel
     }
+    //em termos do game field, piece bottom guarda o comeco da ultima linha do tetromino
     int piece_bottom = (piece_height + line_start_check) * FIELD_WIDTH;
+
+
+
+    /*  o = pecas
+        * = vazio
+        x = peca atual
+    0|*******|
+    1|*******|
+    2|*******|
+    3|*oo*o**|
+    4|x**oo*o|
+    5|xoooooo|
+    6|x*ooooo|
+    7|xoooooo|
+    */
+    //no exemplo acima, as linhas que marcam pontos sao a 7 e 5
+    //e as que nao marcam sao as 6 e 4
+    //apos a funcao ser executada, o field ficara assim
+    /*
+    0|*******|              0|*******|
+    1|*******|              1|*******|
+    2|*******|              2|*******|
+    3|*oo*o**|      ==>     3|*******|
+    4|x**oo*o|              4|*******|
+                            5|*oo*o**|
+    6|x*ooooo|              6|x**oo*o|
+                            7|x*ooooo|
+    */
+
+
+    //faco um for de baixo para cima
+    //no exemplo seria do 7 -> 4, ou melhor de 3 a 0
     for (int line = line_start_check; line >= 0; line--){
-        field_index = (piece_height + line) * FIELD_WIDTH;
+        field_index = (piece_height + line) * FIELD_WIDTH; //comeco da linha
         marked = 1;
+        //utilizo esse for interno para ver se a linha esta
+        //preenchida com blocos de tetrominoes
         for (int col = 0; col < FIELD_WIDTH; col++){
             if (game.field[field_index+col] == EMPTY){
-                marked = 0;
+                marked = 0; //se tem algum bloco vazio, entao a linha nao faz um ponto
                 break;
             }
         }
+        //aqui para baixo que aconte uma parte da magia
+        //para mover as pecas de cima para baixo sem percorrer o game field mais de 1 vez
+
+        //se encontrou uma linha nao marcada
         if (!marked){
+            // e se encontrou linhas marcadas anteriormente
             if (lines_marked > 0){
+                //entao quer dizer que eu tenho que mover a linha nao marcada
+                //para baixo
+                //quem vai me dizer quantas linhas para baixo
+                //vai ser um pequeno calculo
+                //as linhas nao marcadas vai dar o offset qual linha vai receber os blocos
+                //as linhas marcadas + linhas nao marcadas vai dar o offset de qual linha vai dar os blocos
+                /*
+
+
+                1 instancia, linhas marcadas = 1, linhas nao marcadas = 0
+                o contador de linhas nao marcadas so eh incrementado depois desse if
+
+                0|*******|      0|*******|
+                1|*******|      1|*******|
+                2|*******|      2|*******|
+                3|*oo*o**| ==>  3|*oo*o**| 
+                4|x**oo*o|      4|x**oo*o|
+                5|xoooooo|      5|xoooooo|
+linha atual ->  6|x*ooooo|      6|x*ooooo| <- este doa
+                7|xoooooo|      7|x*ooooo| <- este recebe
+
+---------------------------------------------------------------------------------------------------------
+                2 instacia, linhas marcadas = 2, linhas nao marcadas = 1
+
+                0|*******|      0|*******|
+                1|*******|      1|*******|
+                2|*******|      2|*******|
+                3|*oo*o**| ==>  3|*oo*o**| 
+linha atual ->  4|x**oo*o|      4|x**oo*o| <- este doa
+                5|xoooooo|      5|xoooooo|
+                6|x*ooooo|      6|x**oo*o| <- este recebe
+                7|x*ooooo|      7|x*ooooo| 
+                */
                 for (int col = 0; col < FIELD_WIDTH; col++){
                     unmarked_offset = lines_unmarked * FIELD_WIDTH;
                     marked_offset = lines_marked * FIELD_WIDTH;
@@ -388,19 +486,33 @@ int check_line(int piece_height){
             lines_marked++;
         }
     }
+    //depois de percorrer as linhas do tetromino encaixado
+    //temos que reposicionar os blocos acima se houve algum ponto
+    //entao para continuar de onde parou, utilizamos a variavel
+    //que guarda o valor das linhas nao marcadas como ponto
     if (lines_marked > 0){
 
+        //seguindo o exemplo
+        //linhas nao marcadas = 2
+        //linhas marcadas = 2
+        //piece height = 4
+        //line start check = 3
+        //4+3-2 = 5
+        //entao nesse loop vou de 5 ate 2
+        //pegando os blocos exatamente 2 linhas acima
         for (int line = (piece_height + line_start_check - lines_unmarked); line >= lines_marked; line--){
             for (int col = 0; col < FIELD_WIDTH; col++){
                 game.field[line*FIELD_WIDTH + col] = game.field[(line-lines_marked)*FIELD_WIDTH + col];
             }
         }
+        //e nesse loop eu vou nas linhas de 0 a 1 e preencho com vazio
         for (int line = 0; line < lines_marked; line++){
             for (int col = 0; col < FIELD_WIDTH; col++){
                 game.field[line*FIELD_WIDTH + col] = EMPTY;
             }
         }
     }
+    //dou return no score
     switch (lines_marked){
         case 0:
             return 0;
@@ -415,6 +527,7 @@ int check_line(int piece_height){
     }
 }
 
+//funcao para sincronizar o frame
 void frame_sync(){
     static uint64 t0 = 0;
     static uint64 t1 = 0;
@@ -429,6 +542,7 @@ void frame_sync(){
     t0 = t1;
 }
 
+//funcao que atualiza o jogo
 void update(){
     if (game.state != RUNNING) return;
     uint8 piece_moved;
@@ -449,6 +563,8 @@ void update(){
     game.loop_counter++;
 }
 
+
+//funcao responsavel por desenhar o jogo
 void draw(){
     //draw =======================================
     if (game.state == MENU){
@@ -498,6 +614,8 @@ void game_loop(){
     }
 }
 
+
+//funcao responsavel por inicializar as variaveis do jogo
 void init_game(){
     uint8 num_pages = 1 + (FIELD_HEIGHT*FIELD_WIDTH)/PAGE_SIZE;
 

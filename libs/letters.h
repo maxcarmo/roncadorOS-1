@@ -1,7 +1,7 @@
 #ifndef LETTERS_H
 #define LETTERS_H
 
-#include "types.h"
+#include "../types.h"
 
 //ALL ZEROS
 #define BLANK_SPACE 62

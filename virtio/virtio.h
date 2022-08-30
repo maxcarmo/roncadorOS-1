@@ -2,13 +2,16 @@
 #define VIRTIO_H
 
 
-#include "types.h"
-#include "memlayout.h"
+#include "../types.h"
+#include "../memlayout.h"
 
 
 
-#define VIRTIO_MAGIC 0x74726976 //"triv" em little endian
+#define VIRTIO_MAGIC 0x74726976 //"triv" em little endian fica virt
 
+
+#define DEVICE_WIDTH 900
+#define DEVICE_HEIGHT 832
 
 //status register bits
 #define STATUS_RESET				(0)
@@ -101,5 +104,6 @@ void set_bit(uint64 base, MMIOReg reg, uint32 mask);
 void set_descriptor(VirtQDescriptor *desc, uint64 address, uint32 length, uint16 flags, uint16 next);
 void read_regs(uint32 *ptr);
 void handle_virt_int(int id);
+void virtio_probe();
 
 #endif

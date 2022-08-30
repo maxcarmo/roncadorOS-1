@@ -47,4 +47,5 @@ void draw_shadow(piece p);
 void draw_next(piece *next, uint32 next_idx);
 void draw_hold(piece hold, uint8 has_switched);
 void draw_string(char *string, uint32 x, uint32 y, uint32 size, uint32 color, uint8 center);
+void init_game();
 #endif

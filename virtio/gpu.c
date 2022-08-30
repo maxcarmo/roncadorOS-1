@@ -1,17 +1,15 @@
-#include "types.h"
-#include "defs.h"
 #include "gpu.h"
-#include "virtio.h"
-#include "game.h"
-#include "numbers.h"
-#include "letters.h"
-#include "math.h"
+#include "../defs.h"
+#include "../game/game.h"
+#include "../libs/numbers.h"
+#include "../libs/letters.h"
+#include "../libs/math.h"
 
 #define FIELD_LINE_COLOR 	0xFF444444
 #define FIELD_LINE_WIDTH 2
 #define TRANSPARENT 0
 
-uint32 BG_COLOR = 0;
+uint32 BG_COLOR = 0xff000000;
 uint32 FILL_COLOR = 0;
 uint32 STROKE_COLOR = 0;
 uint32 STROKE_WEIGHT = 1;
@@ -118,8 +116,8 @@ void draw_line(int x1, int y1, int x2, int y2){
 	int px, py; //novas posicoes onde a linha comeca
 	px = x1 - (STROKE_WEIGHT / 2); //coord x canto esquerdo superior
 	py = y1 - (STROKE_WEIGHT / 2); //coord y canto esquerdo superior
-	for (int row = 0; row < STROKE_WEIGHT; row++){
-		for (int col = 0; col < STROKE_WEIGHT; col++){
+	for (uint32 row = 0; row < STROKE_WEIGHT; row++){
+		for (uint32 col = 0; col < STROKE_WEIGHT; col++){
 			place_pixel(px + col, py + row, STROKE_COLOR);
 		}
 	}
@@ -148,7 +146,7 @@ void draw_line(int x1, int y1, int x2, int y2){
 		cx += walked_x; //se andou em x, somo +1 ou -1 no x
 		cy += walked_y; //se andou em y, somo +1 ou -1 no y
 		if (walked_x){
-			for (int p = 0; p < STROKE_WEIGHT; p++){
+			for (uint32 p = 0; p < STROKE_WEIGHT; p++){
 				place_pixel(
 					cx + (STROKE_WEIGHT -1)*dir_x,
 					cy + p*dir_y,
@@ -157,7 +155,7 @@ void draw_line(int x1, int y1, int x2, int y2){
 			}
 		}
 		if (walked_y){
-			for (int p = 0; p < STROKE_WEIGHT; p++){
+			for (uint32 p = 0; p < STROKE_WEIGHT; p++){
 				place_pixel(
 					cx + p*dir_x,
 					cy + (STROKE_WEIGHT -1)*dir_y,
@@ -340,8 +338,10 @@ void draw_next(piece *next, uint32 next_idx){
 	gpu_rect rect;
 	uint32 start_x = FIELD_START_X + FIELD_WIDTH * BLOCK_SIZE;
 	uint32 start_y = FIELD_START_Y + ((START_OFFSET + 2)* BLOCK_SIZE);
-	set_rect(&rect, start_x, start_y, NEXT_WIDTH*BLOCK_SIZE, NEXT_HEIGHT*BLOCK_SIZE);
-	stroke_rect(rect, FIELD_LINE_COLOR, FIELD_LINE_WIDTH);
+	fill_color(TRANSPARENT);
+	stroke_color(FIELD_LINE_COLOR);
+	stroke_weigth(FIELD_LINE_WIDTH);
+	draw_rect(start_x, start_y, NEXT_WIDTH*BLOCK_SIZE, NEXT_HEIGHT*BLOCK_SIZE);
 	uint32 st_size = 4;
 
 	draw_string(
@@ -384,9 +384,11 @@ void draw_hold(piece hold, uint8 has_switched){
 		0xffffffff,
 		0
 	);
+	fill_color(TRANSPARENT);
+	stroke_color(FIELD_LINE_COLOR);
+	stroke_weigth(FIELD_LINE_WIDTH);
+	draw_rect(start_x, start_y, HOLD_WIDTH*BLOCK_SIZE, HOLD_HEIGHT*BLOCK_SIZE);
 
-	set_rect(&rect, start_x, start_y, HOLD_WIDTH*BLOCK_SIZE, HOLD_HEIGHT*BLOCK_SIZE);
-	stroke_rect(rect, FIELD_LINE_COLOR, FIELD_LINE_WIDTH);
 
 	if (hold.shape == EMPTY) return;
 	if (has_switched){
@@ -486,25 +488,23 @@ void draw_score(uint16 score){
 
 void draw_field_lines(){
 	gpu_rect rect;
+	stroke_weigth(FIELD_LINE_WIDTH);
+	stroke_color(FIELD_LINE_COLOR);
 	for (uint32 line = START_OFFSET; line <= FIELD_HEIGHT; line++){
-		set_rect(
-			&rect,
+		draw_line(
 			FIELD_START_X,
 			BLOCK_SIZE*line + FIELD_START_Y,
-			FIELD_WIDTH*BLOCK_SIZE,
-			FIELD_LINE_WIDTH
+			FIELD_WIDTH*BLOCK_SIZE + FIELD_START_X,
+			BLOCK_SIZE*line + FIELD_START_Y
 		);
-		fill_rect(rect, FIELD_LINE_COLOR);
 	}
 	for (uint32 col = 0; col <= FIELD_WIDTH; col++){
-		set_rect(
-			&rect,
+		draw_line(
 			BLOCK_SIZE*col + FIELD_START_X,
 			FIELD_START_Y + START_OFFSET*BLOCK_SIZE,
-			FIELD_LINE_WIDTH,
-			FIELD_HEIGHT*BLOCK_SIZE - START_OFFSET*BLOCK_SIZE
+			BLOCK_SIZE*col + FIELD_START_X,
+			FIELD_START_Y + FIELD_HEIGHT * BLOCK_SIZE
 		);
-		fill_rect(rect, FIELD_LINE_COLOR);
 	}
 }
 

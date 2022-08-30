@@ -1,4 +1,7 @@
-#include "types.h"
+#ifndef KEYBOARD_H
+#define KEYBOARD_H
+
+
 #include "virtio.h"
 
 
@@ -77,3 +80,6 @@ typedef struct static_event_queue{
 
 static_event_queue av_events_queue;
 void keyboard_int();
+
+
+#endif
