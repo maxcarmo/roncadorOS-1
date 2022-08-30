@@ -41,8 +41,8 @@ struct proc *scheduler(void);
 //VIRTIO
 void virtio_probe();
 void wait(uint32 ms);
-#define DEVICE_WIDTH 640
-#define DEVICE_HEIGHT 800
+#define DEVICE_WIDTH 900
+#define DEVICE_HEIGHT 832
 
 //GAME
 void init_game();
