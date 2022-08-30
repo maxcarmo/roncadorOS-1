@@ -147,7 +147,6 @@ void handle_virt_int(int id){
     printf(PINK_RED);
     switch(id){
         case 6:
-            printf("TECLADO\n");
             keyboard_int();
             break;
         case 7:
