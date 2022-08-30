@@ -3,7 +3,7 @@
 #include "defs.h"
 #include "memlayout.h"
 #include "console.h"
-#include "virtio.h"
+#include "virtio/virtio.h"
 
 /* 
 tval (trap value) pode conter: 
