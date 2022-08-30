@@ -4,6 +4,8 @@
 #include "riscv.h"
 #include "memlayout.h"
 #include "game.h"
+#include "gpu.h"
+#include "math.h"
 
 extern void mvector(void); // Rotina q salva os registradores em assembly
 extern void msg_syscall(int);
@@ -14,10 +16,29 @@ main() {
     // \uXXXX e \UXXXXXXXX são chamados universal-character-name
     printf(CLEAR_SCREEN CURSOR_UP_LEFT CORAL "\u26F0  尺OS - 尺oncador Operating System (V0.1) \U0001F920\n");
     memory_test();
-    // get_mstatus_mpie(); // Erro porque estamos no modo-S tentando acessar mstatus (exclusivo do modo-M)
-    // char *p_erro = (char*) 0x2;  //tval recebe o valor 0x2
-    // *p_erro = 1; //Exceção síncrona
-    //msg_syscall(10);
+
+
+    init_game();
+
+    while(1){
+        fill_color(0xffE20A4A);
+        stroke_color(0xff000000);
+        stroke_weigth(3);
+        draw_triangle(600,600, 800, 100, 300, 400);
+        fill_color(0xff00ffff);
+        draw_circle(200,200,50);
+        stroke_color(0);
+        draw_rect(350,200, 100,50);
+        draw_line(100,500, 600,700);
+
+
+
+
+        transfer(0,0, DEVICE_WIDTH, DEVICE_HEIGHT);
+
+    }
+
+
     for(;;);
 }
 
@@ -48,6 +69,7 @@ entry() {
     // configura mstatus.MPIE == 1 para que as interrupções sejam habilitadas 
     // quando o sistema voltar para o modo supervisor (mstatus.MIE <- mstatus.MPIE)
     x = x | (1 << 7);
+    x = x | (1 << 13); //habilita float operations
     w_mstatus(x);
 
     // Habilita interrupção do temporizador
@@ -66,12 +88,12 @@ entry() {
     plic_init();
     printf("PLIC inicializado\n");
 
-    process_init();
-    *mtimecmp = *mtime + 10000000;
+    //process_init();
+    //*mtimecmp = *mtime + 10000000;
     printf("Valor de CLINT_MTIMECMP: %p\n", CLINT_MTIMECMP(0));
     printf("Descoberta de dispositivos...\n");
     virtio_probe();
-    //init_game();
+
     
     asm volatile("mret"); // retorna para a função main no modo-S
 }
