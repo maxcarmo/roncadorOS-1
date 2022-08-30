@@ -51,13 +51,23 @@ OBJ = \
 	rng.o \
 	game.o \
 	keyboard.o \
-	math.o
+	math.o \
+	time.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
 %.o: %.c
 	$(GCC) $(FLAGS) -c -o $@ $<	
 
 %.o: %.s
+	$(GCC) $(FLAGS) -c -o $@ $<	
+
+%.o: virtio/%.c
+	$(GCC) $(FLAGS) -c -o $@ $<	
+
+%.o: game/%.c
+	$(GCC) $(FLAGS) -c -o $@ $<	
+
+%.o: libs/%.c
 	$(GCC) $(FLAGS) -c -o $@ $<	
 
 kernel: $(OBJ)
