@@ -2,38 +2,22 @@
 #include "virtio.h"
 #include "keyboard.h"
 #include "defs.h"
+#include "input-event-codes.h"
 
 
 #define TOTAL_EVENT_BUFFER 0x40
 
 
-/*
-* Event types
-*/
-#define EV_SYN			0x00
-#define EV_KEY			0x01
-#define EV_REL			0x02
-#define EV_ABS			0x03
-#define EV_MSC			0x04
-#define EV_SW			0x05
-#define EV_LED			0x11
-#define EV_SND			0x12
-#define EV_REP			0x14
-#define EV_FF			0x15
-#define EV_PWR			0x16
-#define EV_FF_STATUS	0x17
-#define EV_MAX			0x1f
-#define EV_CNT			(EV_MAX+1)
-
 keyboard_device KEYBOARD_DEVICE;
 
 void add_q(static_event_queue *q, virtio_input_event e){
-    if (q->full){
-        printf("static_event_queue.add: cannot add, full queue error");
-        return;
-    }
     q->events[q->tail] = e;
     q->tail = (q->tail + 1) % EVENT_QUEUE_SIZE;
+    if (q->full){
+        printf("static_event_queue.add: full queue warning, discarding 1 element...\n");
+        q->head = q->tail;
+        return;
+    }
     if (q->tail == q->head) q->full = 1;
     q->empty = 0;
 }
@@ -42,12 +26,13 @@ virtio_input_event get_q(static_event_queue *q){
     virtio_input_event e;
     if (q->empty){
         printf("static_event_queue.get_event: cannot get, empty queue error");
-        return;
+        return e;
     }
     e = q->events[q->head];
     q->head = (q->head + 1) % EVENT_QUEUE_SIZE;
     if (q->head == q->tail) q->empty = 1;
     q->full = 0;
+    return e;
 }
 
 void set_q(static_event_queue *q){
@@ -154,14 +139,14 @@ void keyboard_int(){
 
         switch (event->type){
             case EV_KEY:
-                av_events_queue.add(&av_events_queue, *event);
+                if (event->value == 1){
+                    av_events_queue.add(&av_events_queue, *event);
+                }
                 break;
             default:
-                printf("Tipo de evento nao capturado\n");
+                //printf("Tipo de evento nao capturado\n");
                 break;
         }
-        printf("EVENT QUEUE:\nAck: %d\nElement: %d\nLength: %d\n", KEYBOARD_DEVICE.event_ack_idx, element.id, element.length);
-        printf("Type: %x\nCode: %d\nValue: %d\n\n", event->type, event->code, event->value);
     }
 
 
@@ -173,8 +158,6 @@ void keyboard_int(){
         element = queue->used.ring[KEYBOARD_DEVICE.event_ack_idx % QNUM];
         desc = queue->desc[element.id];
         event = (virtio_input_event*)(desc.address);
-        printf("STATUS QUEUE:\nAck: %d\nElement: %d\nLength: %d\n", KEYBOARD_DEVICE.status_ack_idx, element.id, element.length);
-        printf("Type: %x\nCode: %d\nValue: %d\n\n", event->type, event->code, event->value);
         KEYBOARD_DEVICE.status_ack_idx += 1;
     }
 
