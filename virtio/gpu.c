@@ -1,13 +1,10 @@
 #include "gpu.h"
 #include "../defs.h"
-#include "../game/game.h"
 #include "../libs/numbers.h"
 #include "../libs/letters.h"
 #include "../libs/math.h"
+#include "../libs/algorithms.h"
 
-#define FIELD_LINE_COLOR 	0xFF444444
-#define FIELD_LINE_WIDTH 2
-#define TRANSPARENT 0
 
 uint32 BG_COLOR = 0xff000000;
 uint32 FILL_COLOR = 0;
@@ -16,73 +13,12 @@ uint32 STROKE_WEIGHT = 1;
 
 gpu_device *GPU_DEVICE;
 
-uint8 tetris_block_layout[] = 
-{
-0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
-1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
-1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
-1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
-1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,5,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,2,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
-1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
-1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
-1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
-1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
-1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
-1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
-1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
-};
 
-uint32 block_colors [9][6]= {
-	//alpha		   dark out    inside        dark inside    4 points    light inside
-	{ TRANSPARENT, 0xff0097a7, 0xff00e5ff,   0xff00838f, 	0xff90caf9, 0xff84ffff }, //I light blue
-	{ TRANSPARENT, 0xff880e4f, 0xffe91e63,   0xffb71c1c, 	0xff90caf9, 0xffe57373 }, //Z red
-	{ TRANSPARENT, 0xff2e7d32, 0xff00e676,   0xff1b5e20, 	0xff90caf9, 0xff69f0ae }, //S green
-	{ TRANSPARENT, 0xff9e9e3e, 0xffd6d244,   0xff838718, 	0xff90caf9, 0xfff2f25f }, //O yellow
-	{ TRANSPARENT, 0xff4527a0, 0xff673ab7,   0xff4a148c, 	0xff90caf9, 0xff9575cd }, //T purple-pinkish
-	{ TRANSPARENT, 0xffe64a19, 0xffff8a65,   0xffdd2c00, 	0xff90caf9, 0xffffab91 }, //L orange
-	{ TRANSPARENT, 0xff0000ff, 0xff304ffe,   0xff1a237e, 	0xff90caf9, 0xff8c9eff }, //J blue
-	{ TRANSPARENT, 0xff555555, TRANSPARENT,  0xff555555, 	0xff555555, 0xff555555 }, //shadow
-	{ TRANSPARENT, 0xff555555, 0xff999999,   0xff444444,   	0xff90caf9, 0xffbbbbbb }  //unavailable
-	//			0x283593
-};
-
-							//outline //shadow  //inside
-uint32 numbers_colors[3] = {0xff009688, 0xff000000, 0xffffffff};
-
-uint32 to_center_pieces[7][2] =
-{	//x, y
-	{16, 16}, //I
-	{32, 32}, //Z
-	{32, 32}, //S
-	{16, 00}, //O
-	{32, 32}, //T
-	{32, 32}, //L
-	{32, 32}, //J
-};
 
 void place_pixel(int x, int y, uint32 color){
 	if (x < 0 || x >= DEVICE_WIDTH) return;
 	if (y < 0 || y >= DEVICE_HEIGHT) return;
+	if (color == TRANSPARENT) return;
 	GPU_DEVICE->framebuffer[DEVICE_WIDTH*y + x] = color;
 }
 
@@ -165,13 +101,6 @@ void draw_line(int x1, int y1, int x2, int y2){
 		}
 	}
 }
-
-void swap(int *a, int *b){
-	int temp = *a;
-	*a = *b;
-	*b = temp;
-}
-
 
 
 void fill_triangle_flat_base(
@@ -334,227 +263,99 @@ void draw_rect(int x, int y, int w, int h){
 
 
 
-void draw_next(piece *next, uint32 next_idx){
-	gpu_rect rect;
-	uint32 start_x = FIELD_START_X + FIELD_WIDTH * BLOCK_SIZE;
-	uint32 start_y = FIELD_START_Y + ((START_OFFSET + 2)* BLOCK_SIZE);
-	fill_color(TRANSPARENT);
-	stroke_color(FIELD_LINE_COLOR);
-	stroke_weigth(FIELD_LINE_WIDTH);
-	draw_rect(start_x, start_y, NEXT_WIDTH*BLOCK_SIZE, NEXT_HEIGHT*BLOCK_SIZE);
-	uint32 st_size = 4;
-
-	draw_string(
-		"Next",
-		start_x + 15,
-		start_y - LETTER_HEIGHT*st_size - 5,
-		st_size,
-		0xffffffff,
-		0
-	);
-
-	piece p;
-	for (uint32 pc = 0; pc < NEXT_MAX; pc++){
-		p = next[(pc+next_idx)%NEXT_MAX];
-		for (uint32 line = 0; line < TETROMINO_SIZE; line++){
-			for (uint32 col = 0; col < TETROMINO_SIZE; col++){
-				if (tetrominoes[p.shape][line*TETROMINO_SIZE + col]){
-					draw_tetris_block(
-						start_x + col*BLOCK_SIZE + to_center_pieces[p.shape][0],
-						start_y + line*BLOCK_SIZE + to_center_pieces[p.shape][1] + pc*BLOCK_SIZE*TETROMINO_SIZE,
-						p.shape
-					);
-				}
-			}
-		}
-	}
-}
-void draw_hold(piece hold, uint8 has_switched){
-	gpu_rect rect;
-	uint8 color_set;
-	uint32 start_x = FIELD_START_X - HOLD_WIDTH * BLOCK_SIZE;
-	uint32 start_y = FIELD_START_Y + BLOCK_SIZE * 10;
-	uint32 st_size = 4;
-
-	draw_string(
-		"Hold",
-		FIELD_START_X - LETTER_WIDTH*5*st_size + (LETTER_WIDTH*st_size)/2,
-		start_y - LETTER_HEIGHT*st_size - 5,
-		st_size,
-		0xffffffff,
-		0
-	);
-	fill_color(TRANSPARENT);
-	stroke_color(FIELD_LINE_COLOR);
-	stroke_weigth(FIELD_LINE_WIDTH);
-	draw_rect(start_x, start_y, HOLD_WIDTH*BLOCK_SIZE, HOLD_HEIGHT*BLOCK_SIZE);
-
-
-	if (hold.shape == EMPTY) return;
-	if (has_switched){
-		color_set = UNAVAILABLE;
-	}else{
-		color_set = hold.shape;
-	}
-	for (uint32 line = 0; line < TETROMINO_SIZE; line++){
-		for (uint32 col = 0; col < TETROMINO_SIZE; col++){
-			if (tetrominoes[hold.shape][line*TETROMINO_SIZE + col]){
-				draw_tetris_block(
-					start_x + col*BLOCK_SIZE + to_center_pieces[hold.shape][0],
-					start_y + line*BLOCK_SIZE + to_center_pieces[hold.shape][1],
-					color_set
-				);
-			}
-		}
-	}
-}
-
-uint16 str_size(char *string){
-	uint16 counter = 0;
-	while (*(string++)) counter++;
-	return counter;
-}
-
-void draw_char(char s, uint32 x, uint32 y, uint32 size, uint32 color){
-	uint32 black = 0xff000000;
-	uint32 byte;
+void draw_char(char c, int x, int y, uint32 size){
 	char mapped_letter;
-	uint32 new_height, new_width;
+	uint32 new_height, new_width, color;
 	new_height = LETTER_HEIGHT * size;
 	new_width = LETTER_WIDTH * size;
-	mapped_letter = map_ascii[s];
+	mapped_letter = map_ascii[c];
+	uint8 marked_as_fg;
 	for (uint32 line = 0; line < new_height; line++){
 		for (uint32 col = 0; col < new_width; col++){
-			byte = (y+line) * DEVICE_WIDTH + (col + x);
-			if (characters[mapped_letter][(line/size)*LETTER_WIDTH + (col/size)]){
-				GPU_DEVICE->framebuffer[byte] = color;
+			marked_as_fg = characters[mapped_letter][(line/size)*LETTER_WIDTH + (col/size)];
+			if (marked_as_fg){
+				color = FILL_COLOR;
 			}else{
-				GPU_DEVICE->framebuffer[byte] = black;
+				color = BG_COLOR;
 			}
+			place_pixel(col + x,line + y, color);
 		}
 	}
 }
 
 
-void draw_string(char *string, uint32 x, uint32 y, uint32 size, uint32 color, uint8 center){
-	uint16 string_size = str_size(string);
-	int new_x = x;
-	int new_y = y;
-	if (center){
-		new_x = x - ((string_size*LETTER_WIDTH*size)/2);
-		new_y = y - ((LETTER_HEIGHT*size)/2);
-		if (new_x < 0) new_x = 0;
-		if (new_y < 0) new_y = 0;
-	}
-	for (uint32 i = 0; i < string_size; i++){
-		draw_char(string[i], new_x + i*LETTER_WIDTH*size, new_y, size, color);
+void draw_string(char *string, int x, int y, uint32 size, double cursor_x, double cursor_y){
+	int new_x, new_y;
+	double espacamento_linha = 1.09; //9%
+	if (cursor_x < 0) cursor_x = 0;
+	if (cursor_x > 1) cursor_x = 1;
+	if (cursor_y < 0) cursor_y = 0;
+	if (cursor_y > 1) cursor_y = 1;
+	if (size == 0) size = 1;
+	uint32 string_size;
+	uint32 line = 0;
+	uint32 char_iterator = 0;
+	uint32 c;
+	while(true){
+		string_size = 0;
+		while(string[char_iterator] != '\n' && string[char_iterator] != '\0'){
+			string_size++;
+			char_iterator++;
+		}
+		new_x = x - ((string_size*LETTER_WIDTH*size) * cursor_x);
+		new_y = y - ((LETTER_HEIGHT*size) * cursor_y);
+		for (int i = string_size; i > 0; i--){
+			draw_char(string[char_iterator-i], new_x + (string_size - i)*LETTER_WIDTH*size, new_y, size);
+		}
+		if (string[char_iterator] == '\0') break;
+		line++;
+		char_iterator++;
+		y += LETTER_HEIGHT*size*espacamento_linha;
 	}
 }
 
 
-void draw_number(uint32 x, uint32 y, uint8 number){
-	uint32 color;
+void draw_styled_number(uint32 number, int x, int y, double cursor_x, double cursor_y){
 	uint8 color_number;
-	for (uint32 line = 0; line < NUMBER_HEIGHT; line++){
-		for (uint32 col = 0; col < NUMBER_WIDTH; col++){
-			color_number = numbers[number][line*NUMBER_WIDTH + col];
-			color = numbers_colors[color_number];
-			GPU_DEVICE->framebuffer[(line+y)*DEVICE_WIDTH + (col+x)] = color;
-		}
+	uint32 color;
+	uint8 num_array[64];
+	uint16 number_len = 0;
+	while (number > 0){
+		num_array[number_len++] = number % 10;
+		number /= 10;
 	}
-}
+	if (number_len == 0){
+		number_len++;
+		num_array[0] = 0;
+	}
 
-void draw_score(uint16 score){
-	uint32 st_size = 4;
-	draw_string(
-		"Score", 
-		FIELD_START_X - LETTER_WIDTH*6*st_size + (LETTER_WIDTH*st_size)/2,
-		FIELD_START_Y + START_OFFSET*BLOCK_SIZE,
-		st_size,
-		0xffffffff,
-		0
-	);
-	uint32 start_x = FIELD_START_X - NUMBER_WIDTH*4 - 16;
-	uint32 start_y = FIELD_START_Y + START_OFFSET * BLOCK_SIZE + 56;
-	uint16 div = 1000;
-	uint16 digit;
-	for (uint8 i = 0; i < 4; i++){
-		digit = score/div;
-		draw_number(start_x + i*NUMBER_WIDTH, start_y, digit);
-		score = score % div;
-		div /= 10;
-	}
-}
+	x -= (number_len*NUMBER_WIDTH) * cursor_x;
+	y -= NUMBER_HEIGHT * cursor_y;
 
-void draw_field_lines(){
-	gpu_rect rect;
-	stroke_weigth(FIELD_LINE_WIDTH);
-	stroke_color(FIELD_LINE_COLOR);
-	for (uint32 line = START_OFFSET; line <= FIELD_HEIGHT; line++){
-		draw_line(
-			FIELD_START_X,
-			BLOCK_SIZE*line + FIELD_START_Y,
-			FIELD_WIDTH*BLOCK_SIZE + FIELD_START_X,
-			BLOCK_SIZE*line + FIELD_START_Y
-		);
-	}
-	for (uint32 col = 0; col <= FIELD_WIDTH; col++){
-		draw_line(
-			BLOCK_SIZE*col + FIELD_START_X,
-			FIELD_START_Y + START_OFFSET*BLOCK_SIZE,
-			BLOCK_SIZE*col + FIELD_START_X,
-			FIELD_START_Y + FIELD_HEIGHT * BLOCK_SIZE
-		);
-	}
-}
-
-void draw_field(uint8 *field){
-	draw_field_lines();
-	uint32 index, x, y;
-	for (uint32 line = 0; line < FIELD_HEIGHT; line++){
-		for (uint32 col = 0; col < FIELD_WIDTH; col++){
-			index = line * FIELD_WIDTH + col;
-			if (field[index] != EMPTY){
-				y = FIELD_START_Y + line*BLOCK_SIZE;
-				x = FIELD_START_X + col*BLOCK_SIZE;
-				draw_tetris_block(x,y, field[index]);
-			}
-		}
-	}
-}
-
-void draw_tetris_block(uint32 x, uint32 y, piece_shape shape){
-	uint8 pixel;
-	uint32 block_pixel_x, block_pixel_y, pixel_index;
-	for (uint32 line = y; line < y+BLOCK_SIZE; line++){
-		for (uint32 col = x; col < x+BLOCK_SIZE; col++){
-			block_pixel_x = col - x;
-			block_pixel_y = line - y;
-			pixel_index = block_pixel_y * BLOCK_SIZE + block_pixel_x;
-			pixel = tetris_block_layout[pixel_index];
-			place_pixel(col, line, block_colors[shape][pixel]);
-		}
-	}
-}
-
-void draw_piece(piece p, uint8 shadow){
-	uint32 x_offset, y_offset;
-	uint8 color_set;
-	x_offset = FIELD_START_X + (p.x * BLOCK_SIZE);
-	y_offset = FIELD_START_Y + (p.y * BLOCK_SIZE);
-	for (uint8 line = 0; line < TETROMINO_SIZE; line++){
-		for (uint8 col = 0; col < TETROMINO_SIZE; col++){
-			if (tetrominoes[p.shape][rotate(col, line, p.rotation, p.shape)]){ //se há um bloco nessa posicao
-				if (shadow){
-					color_set = SHADOW;
-				}else{
-					color_set = p.shape;
+	while (number_len){
+		number = num_array[--number_len];
+		for (uint32 line = 0; line < NUMBER_HEIGHT; line++){
+			for (uint32 col = 0; col < NUMBER_WIDTH; col++){
+				color_number = numbers[number][line*NUMBER_WIDTH + col];
+				switch (color_number) {
+					case 0:
+						color = BG_COLOR;
+						break;
+					case 1:
+						color = STROKE_COLOR;
+						break;
+					case 2:
+						color = FILL_COLOR;
+						break;
 				}
-				draw_tetris_block(x_offset + col*BLOCK_SIZE, y_offset + line*BLOCK_SIZE, color_set);
+				place_pixel(col + x, line + y, color);
 			}
 		}
+		x += NUMBER_WIDTH;
 	}
 }
+
+
 
 
 void clear(){
@@ -654,6 +455,8 @@ void set_rect(gpu_rect *rect, uint32 x, uint32 y, uint32 w, uint32 h){
 	rect->height = h;
 	rect->width = w;
 }
+
+
 
 
 /*
@@ -897,8 +700,11 @@ gpu_device* setup_gpu_device(uint64 ptr){
 	set_bit(ptr, STATUS, STATUS_ACKNOWLEDGE);
 	//set driver status bit
 	set_bit(ptr, STATUS, STATUS_DRIVER);
+
+	write_to_reg(ptr, HOST_FEATURES_SEL, 0);
 	uint32 host_feat = read_from_reg(ptr, HOST_FEATURES);
-	write_to_reg(ptr, GUEST_FEATURES, host_feat);
+	write_to_reg(ptr, GUEST_FEATURES_SEL, 0);
+	write_to_reg(ptr, GUEST_FEATURES, host_feat | (1 << VIRTIO_F_EVENT_IDX));
 
 	//setup device specific
 	write_to_reg(ptr, QUEUE_NUM, QNUM);
@@ -906,8 +712,9 @@ gpu_device* setup_gpu_device(uint64 ptr){
 
 	//SELECT THE QUEUE
 	write_to_reg(ptr, QUEUE_SEL, 0X0);
-	
 	VirtQ *queue = alloc(num_pages);
+	queue->av.flags = 1;
+	queue->av.used_event = 1;
 	uint32 q_pfn = ((uint64)queue)/PAGE_SIZE;
 
 	//INFORM PAGE_SIZE
@@ -1011,7 +818,7 @@ void transfer(uint32 x, uint32 y, uint32 width, uint32 height){
 	GPU_DEVICE->queue->desc[GPU_DEVICE->idx] = desc_rf_resp;
 	GPU_DEVICE->idx = (GPU_DEVICE->idx + 1) % QNUM;
 	GPU_DEVICE->queue->av.ring[GPU_DEVICE->queue->av.index % QNUM] = head;
-	GPU_DEVICE->queue->av.index = (GPU_DEVICE->queue->av.index + 1); 
+	GPU_DEVICE->queue->av.index = (GPU_DEVICE->queue->av.index + 1);
 
 
 	//RUN THE QUEUE
