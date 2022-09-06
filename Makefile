@@ -52,7 +52,8 @@ OBJ = \
 	game.o \
 	keyboard.o \
 	math.o \
-	time.o
+	time.o \
+	algorithms.o
 #static pattern rules (http://web.mit.edu/gnu/doc/html/make_4.html#SEC37)
 # $@ e $< são variáveis automáticas 	
 %.o: %.c
