@@ -4,8 +4,252 @@
 #include "../virtio/rng.h"
 #include "../libs/input-event-codes.h"
 #include "../libs/time.h"
+#include "../virtio/gpu.h"
 #include "game.h"
 
+
+#define FIELD_LINE_COLOR 	0xFF444444
+#define FIELD_LINE_WIDTH 2
+
+
+uint32 block_colors [9][6]= {
+	//alpha		   dark out    			inside        			dark inside    			4 points    			light inside
+	{ TRANSPARENT, COLOR_HEX(0x0097a7), COLOR_HEX(0x00e5ff),   COLOR_HEX(0x00838f), 	COLOR_HEX(0x90caf9), COLOR_HEX(0x84ffff) }, //I light blue
+	{ TRANSPARENT, COLOR_HEX(0x880e4f), COLOR_HEX(0xe91e63),   COLOR_HEX(0xb71c1c), 	COLOR_HEX(0x90caf9), COLOR_HEX(0xe57373) }, //Z red
+	{ TRANSPARENT, COLOR_HEX(0x2e7d32), COLOR_HEX(0x00e676),   COLOR_HEX(0x1b5e20), 	COLOR_HEX(0x90caf9), COLOR_HEX(0x69f0ae) }, //S green
+	{ TRANSPARENT, COLOR_HEX(0x9e9e3e), COLOR_HEX(0xd6d244),   COLOR_HEX(0x838718), 	COLOR_HEX(0x90caf9), COLOR_HEX(0xf2f25f) }, //O yellow
+	{ TRANSPARENT, COLOR_HEX(0x4527a0), COLOR_HEX(0x673ab7),   COLOR_HEX(0x4a148c), 	COLOR_HEX(0x90caf9), COLOR_HEX(0x9575cd) }, //T purple-pinkish
+	{ TRANSPARENT, COLOR_HEX(0xe64a19), COLOR_HEX(0xff8a65),   COLOR_HEX(0xdd2c00), 	COLOR_HEX(0x90caf9), COLOR_HEX(0xffab91) }, //L orange
+	{ TRANSPARENT, COLOR_HEX(0x0000ff), COLOR_HEX(0x304ffe),   COLOR_HEX(0x1a237e), 	COLOR_HEX(0x90caf9), COLOR_HEX(0x8c9eff) }, //J blue
+	{ TRANSPARENT, COLOR_HEX(0x555555), TRANSPARENT,  			COLOR_HEX(0x555555), 	COLOR_HEX(0x555555), COLOR_HEX(0x555555) }, //shadow
+	{ TRANSPARENT, COLOR_HEX(0x555555), COLOR_HEX(0x999999),   COLOR_HEX(0x444444),   	COLOR_HEX(0x90caf9), COLOR_HEX(0xbbbbbb) }  //unavailable
+	//			0x283593
+};
+
+
+uint8 tetris_block_layout[] = 
+{
+0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
+1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
+1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
+1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,5,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,1,2,1,1,
+1,1,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,
+1,1,2,1,4,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,1,2,1,1,
+1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,
+1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
+};
+
+uint32 to_center_pieces[7][2] =
+{	//x, y
+	{16, 16}, //I
+	{32, 32}, //Z
+	{32, 32}, //S
+	{16, 00}, //O
+	{32, 32}, //T
+	{32, 32}, //L
+	{32, 32}, //J
+};
+
+
+void draw_next(piece *next, uint32 next_idx){
+	gpu_rect rect;
+	uint32 start_x = FIELD_START_X + FIELD_WIDTH * BLOCK_SIZE;
+	uint32 start_y = FIELD_START_Y + ((START_OFFSET + 2)* BLOCK_SIZE);
+
+	fill_color(TRANSPARENT); stroke_color(FIELD_LINE_COLOR); stroke_weigth(FIELD_LINE_WIDTH);
+	draw_rect(start_x, start_y, NEXT_WIDTH*BLOCK_SIZE, NEXT_HEIGHT*BLOCK_SIZE);
+	uint32 font_size = 4; 
+
+    fill_color(WHITE);
+    bg_color(TRANSPARENT);
+	draw_string(
+		"Next",
+		start_x + 15,
+		start_y - 15,
+		font_size,
+		0,
+		1
+	);
+
+	piece p;
+	for (uint32 pc = 0; pc < NEXT_MAX; pc++){
+		p = next[(pc+next_idx)%NEXT_MAX];
+		for (uint32 line = 0; line < TETROMINO_SIZE; line++){
+			for (uint32 col = 0; col < TETROMINO_SIZE; col++){
+				if (tetrominoes[p.shape][line*TETROMINO_SIZE + col]){
+					draw_tetris_block(
+						start_x + col*BLOCK_SIZE + to_center_pieces[p.shape][0],
+						start_y + line*BLOCK_SIZE + to_center_pieces[p.shape][1] + pc*BLOCK_SIZE*TETROMINO_SIZE,
+						p.shape
+					);
+				}
+			}
+		}
+	}
+}
+void draw_hold(piece hold, uint8 has_switched){
+	gpu_rect rect;
+	uint8 color_set;
+	uint32 start_x = FIELD_START_X - HOLD_WIDTH * BLOCK_SIZE;
+	uint32 start_y = FIELD_START_Y + BLOCK_SIZE * 10;
+	uint32 font_size = 4;
+
+    fill_color(WHITE);
+    bg_color(TRANSPARENT);
+	draw_string(
+		"Hold",
+		FIELD_START_X - 15,
+		start_y - 15,
+		font_size,
+		1,
+		1
+	);
+
+	fill_color(TRANSPARENT);
+    stroke_color(FIELD_LINE_COLOR);
+    stroke_weigth(FIELD_LINE_WIDTH);
+	draw_rect(start_x, start_y, HOLD_WIDTH*BLOCK_SIZE, HOLD_HEIGHT*BLOCK_SIZE);
+
+
+	if (hold.shape == EMPTY) return;
+	if (has_switched){
+		color_set = UNAVAILABLE;
+	}else{
+		color_set = hold.shape;
+	}
+	for (uint32 line = 0; line < TETROMINO_SIZE; line++){
+		for (uint32 col = 0; col < TETROMINO_SIZE; col++){
+			if (tetrominoes[hold.shape][line*TETROMINO_SIZE + col]){
+				draw_tetris_block(
+					start_x + col*BLOCK_SIZE + to_center_pieces[hold.shape][0],
+					start_y + line*BLOCK_SIZE + to_center_pieces[hold.shape][1],
+					color_set
+				);
+			}
+		}
+	}
+}
+
+
+void draw_score(uint16 score){
+	uint32 font_size = 4;
+
+    fill_color(WHITE);
+    bg_color(TRANSPARENT);
+	draw_string(
+		"Score", 
+		FIELD_START_X - 20,
+		FIELD_START_Y + START_OFFSET*BLOCK_SIZE,
+		font_size,
+		1,
+		0
+	);
+	uint32 start_x = FIELD_START_X - 20;
+	uint32 start_y = FIELD_START_Y + START_OFFSET * BLOCK_SIZE + 56;
+
+
+    bg_color(COLOR_HEX(0x009688));
+    stroke_color(BLACK);
+    fill_color(WHITE);
+    draw_styled_number(score, start_x, start_y, 1, 0);
+}
+
+void draw_field_lines(){
+	gpu_rect rect;
+	stroke_weigth(FIELD_LINE_WIDTH);
+	stroke_color(FIELD_LINE_COLOR);
+	for (uint32 line = START_OFFSET; line <= FIELD_HEIGHT; line++){
+		draw_line(
+			FIELD_START_X,
+			BLOCK_SIZE*line + FIELD_START_Y,
+			FIELD_WIDTH*BLOCK_SIZE + FIELD_START_X,
+			BLOCK_SIZE*line + FIELD_START_Y
+		);
+	}
+	for (uint32 col = 0; col <= FIELD_WIDTH; col++){
+		draw_line(
+			BLOCK_SIZE*col + FIELD_START_X,
+			FIELD_START_Y + START_OFFSET*BLOCK_SIZE,
+			BLOCK_SIZE*col + FIELD_START_X,
+			FIELD_START_Y + FIELD_HEIGHT * BLOCK_SIZE
+		);
+	}
+}
+
+void draw_field(uint8 *field){
+	draw_field_lines();
+	uint32 index, x, y;
+	for (uint32 line = 0; line < FIELD_HEIGHT; line++){
+		for (uint32 col = 0; col < FIELD_WIDTH; col++){
+			index = line * FIELD_WIDTH + col;
+			if (field[index] != EMPTY){
+				y = FIELD_START_Y + line*BLOCK_SIZE;
+				x = FIELD_START_X + col*BLOCK_SIZE;
+				draw_tetris_block(x,y, field[index]);
+			}
+		}
+	}
+}
+
+
+
+
+void draw_tetris_block(uint32 x, uint32 y, piece_shape shape){
+	uint8 pixel;
+	uint32 block_pixel_x, block_pixel_y, pixel_index;
+	for (uint32 line = y; line < y+BLOCK_SIZE; line++){
+		for (uint32 col = x; col < x+BLOCK_SIZE; col++){
+			block_pixel_x = col - x;
+			block_pixel_y = line - y;
+			pixel_index = block_pixel_y * BLOCK_SIZE + block_pixel_x;
+			pixel = tetris_block_layout[pixel_index];
+			place_pixel(col, line, block_colors[shape][pixel]);
+		}
+	}
+}
+
+void draw_piece(piece p, uint8 shadow){
+	uint32 x_offset, y_offset;
+	uint8 color_set;
+	x_offset = FIELD_START_X + (p.x * BLOCK_SIZE);
+	y_offset = FIELD_START_Y + (p.y * BLOCK_SIZE);
+	for (uint8 line = 0; line < TETROMINO_SIZE; line++){
+		for (uint8 col = 0; col < TETROMINO_SIZE; col++){
+			if (tetrominoes[p.shape][rotate(col, line, p.rotation, p.shape)]){ //se há um bloco nessa posicao
+				if (shadow){
+					color_set = SHADOW;
+				}else{
+					color_set = p.shape;
+				}
+				draw_tetris_block(x_offset + col*BLOCK_SIZE, y_offset + line*BLOCK_SIZE, color_set);
+			}
+		}
+	}
+}
 
 
 
@@ -42,7 +286,7 @@ struct GAME{
 
 
 //IZSOTLJ
-extern uint8 tetrominoes[NUM_OF_TETROMINOS][BLOCKS_PER_TETROMINO] = {
+uint8 tetrominoes[NUM_OF_TETROMINOS][BLOCKS_PER_TETROMINO] = {
     {
         0,0,0,0,
         1,1,1,1,
@@ -118,6 +362,7 @@ uint32 rotate(uint32 x, uint32 y, uint32 rotation, piece_shape shape){
                 case 2: return 10 - (y * TETROMINO_SIZE) - x;   //180 graus
                 case 3: return 2 - y + (x*TETROMINO_SIZE);      //270 graus
             }
+            break;
         case I:
         case O:
         //ja essas usam 4x4
@@ -563,28 +808,45 @@ void update(){
     game.loop_counter++;
 }
 
-
+#define BIGGER 10
+#define BIG 7
+#define NORMAL 5
+#define SMALL 4
+#define XSMALL 3
 //funcao responsavel por desenhar o jogo
 void draw(){
     //draw =======================================
     if (game.state == MENU){
-        clear();
-        uint32 commands_title_size = 5;
-        uint32 commands_size = 3;
-        uint32 diff = (commands_size + 1)*10;
-        uint32 commands_start = 220;
-        draw_string("TETRIS", DEVICE_WIDTH/2, 90, 10, 0xFFEB3E1B, true);
-        draw_string("Commands", 20, 200, commands_title_size, 0xffff9040, false);
-        draw_string("ARROW UP:    rotate", 20, commands_start + diff*1, commands_size, 0xffff0000, false);
-        draw_string("ARROW DOWN:  move down", 20, commands_start+diff*2, commands_size, 0xffff0000, false);
-        draw_string("ARROW LEFT:  move left", 20, commands_start+diff*3, commands_size, 0xffff0000, false);
-        draw_string("ARROW RIGHT: move right", 20, commands_start+diff*4, commands_size, 0xffff0000, false);
-        draw_string("C:           hold", 20, commands_start+diff*5, commands_size, 0xffff0000, false);
-        draw_string("R:           reset", 20, commands_start+diff*6, commands_size, 0xffff0000, false);
-        draw_string("P:           pause", 20, commands_start+diff*7, commands_size, 0xffff0000, false);
-        draw_string("SPACE:       hard drop", 20, commands_start+diff*8, commands_size, 0xffff0000, false);
-        draw_string("PRESSIONE ENTER PARA COMECAR", DEVICE_WIDTH/2, DEVICE_HEIGHT/2 + DEVICE_HEIGHT/4, 4, 0xff00ff00, true);
+        bg_color(COLOR_HEX(0x202035));
+        clear();  
+
+        bg_color(TRANSPARENT);
+
+        fill_color(COLOR_HEX(0x8613F4));
+        draw_string("TETRIS", DEVICE_WIDTH/2, DEVICE_HEIGHT / 10, BIGGER, .5, .5);
+
+        fill_color(COLOR_HEX(0x09A4DB));
+        draw_string("Commands", 20, 200, BIG, 0 , 0);
+        draw_string(
+            "ARROW UP:    rotate\n" 
+            "ARROW DOWN:  move down\n"
+            "ARROW LEFT:  move left\n"
+            "ARROW RIGHT: move right\n"
+            "C:           hold\n"
+            "R:           reset\n"
+            "P:           pause\n"
+            "SPACE:       hard drop",
+            20, 300, SMALL, 0, 0
+        );
+
+        fill_color(COLOR_HEX(0x80F413));
+        draw_string("PRESSIONE ENTER PARA COMECAR", DEVICE_WIDTH/2, DEVICE_HEIGHT - DEVICE_HEIGHT/10, SMALL, .5, 0);
+        
+
+
+        //
     }else{
+        bg_color(COLOR_HEX(0x101010));
         clear();
         draw_field(game.field);
         draw_score(game.score);
@@ -594,10 +856,13 @@ void draw(){
             draw_piece(game.shadow_piece, true);
             draw_piece(game.current_piece, false);
         }else{
+            bg_color(TRANSPARENT);
             if (game.state == OVER){
-                draw_string("GAME OVER", DEVICE_WIDTH/2, DEVICE_HEIGHT/2, 10, 0xffff0000, true);
+                fill_color(COLOR_HEX(0xEB3E1B));
+                draw_string("GAME OVER", DEVICE_WIDTH/2, DEVICE_HEIGHT/10, 10, .5, .5);
             }else if (game.state == PAUSED){
-                draw_string("PAUSED", DEVICE_WIDTH/2, DEVICE_HEIGHT/2, 8, 0xFFEB3E1B, true);
+                fill_color(COLOR_HEX(0x0078FF));
+                draw_string("PAUSED", DEVICE_WIDTH/2, DEVICE_HEIGHT/10, 8, .5, .5);
             }
         }
     }
