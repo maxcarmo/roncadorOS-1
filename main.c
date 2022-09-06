@@ -3,9 +3,10 @@
 #include "console.h"
 #include "riscv.h"
 #include "memlayout.h"
-#include "game.h"
-#include "gpu.h"
-#include "math.h"
+#include "game/game.h"
+#include "virtio/gpu.h"
+#include "libs/math.h"
+#include "virtio/rng.h"
 
 extern void mvector(void); // Rotina q salva os registradores em assembly
 extern void msg_syscall(int);
@@ -14,13 +15,11 @@ extern void msg_syscall(int);
 void
 main() {
     // \uXXXX e \UXXXXXXXX são chamados universal-character-name
-    printf(CLEAR_SCREEN CURSOR_UP_LEFT CORAL "\u26F0  尺OS - 尺oncador Operating System (V0.1) \U0001F920\n");
-    memory_test();
-
-
     init_game();
 
+    bg_color(0xffffffff);
     while(1){
+        clear();
         fill_color(0xffE20A4A);
         stroke_color(0xff000000);
         stroke_weigth(3);
@@ -47,9 +46,7 @@ void
 entry() {
     // gerenciamento do heap
     memory_init();
-    printf("-->Valor de MTIME: %d\n", *(uint64*) CLINT_MTIME);
-    printf("-->Valor de CLINT_MTIME: %p\n", (uint64*) CLINT_MTIME);
-
+    printf("\n\n\n");
     //O fluxo de execução retorna para a função main em main.c
     w_mepc((uint64) main);
     // Configura o vetor de interrupções.
@@ -79,9 +76,9 @@ entry() {
     x = x | (1 << 11); // MEIE (Interrupções externas)
     w_mie(x);
     // 1 interrupção por segundo
-    uint64 *mtimecmp = (uint64 *) CLINT_MTIMECMP(0);
+    //uint64 *mtimecmp = (uint64 *) CLINT_MTIMECMP(0);
     uint64 *mtime = (uint64 *) CLINT_MTIME;
-    printf("Valor de MTIME: %d\n", *mtime);
+    //printf("Valor de MTIME: %d\n", *mtime);
     
     uartinit();
     printf("UART Inicializado\n");
@@ -90,7 +87,7 @@ entry() {
 
     //process_init();
     //*mtimecmp = *mtime + 10000000;
-    printf("Valor de CLINT_MTIMECMP: %p\n", CLINT_MTIMECMP(0));
+    //printf("Valor de CLINT_MTIMECMP: %p\n", CLINT_MTIMECMP(0));
     printf("Descoberta de dispositivos...\n");
     virtio_probe();
 
