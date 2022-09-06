@@ -112,9 +112,6 @@ mtrap(uint64 tval,
                 // Obtém  a IRQ que causou a interrupção
                 irq = plic_claim();
                 switch(irq) {
-                    case 0:
-                        printf(PINK_RED "NADAAAAA\n" CR);
-                        break;
                     case 1:
                     case 2:
                     case 3:
@@ -123,10 +120,10 @@ mtrap(uint64 tval,
                     case 6:
                     case 7:
                     case 8:
-                        handle_virt_int(irq);
+                        handle_virt_int(irq-1);
                         break;
                     case UART_IRQ:
-                        printf(PINK_RED "UART DEVICE AAAA\n" CR);
+                        //printf(PINK_RED "UART DEVICE\n" CR);
                         console_handler();
                         break;
                     default:
