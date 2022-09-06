@@ -9,7 +9,7 @@
 #define LETTER_HEIGHT 10
 #define LETTER_VECTOR_SIZE 70 //letterw * letterh
 #define ALPHABET_SIZE 26
-#define MAPPED_CHARS 63 //caracteres mapeados ate o momento
+#define MAPPED_CHARS 64 //caracteres mapeados ate o momento
 
 
 
@@ -24,7 +24,7 @@ BLANK_SPACE,    //  ACK    0x06     6
 BLANK_SPACE,    //  BEL    0x07     7
 BLANK_SPACE,    //  BS     0x08     8
 BLANK_SPACE,    //  TAB    0x09     9
-BLANK_SPACE,    //  LF     0x0a     10
+BLANK_SPACE,    //  LF     0x0a     10  line feed nao esta mapeado mas pode ser usado para quebra de linhas
 BLANK_SPACE,    //  VT     0x0b     11
 BLANK_SPACE,    //  FF     0x0c     12
 BLANK_SPACE,    //  CR     0x0d     13
@@ -72,7 +72,7 @@ BLANK_SPACE,    //  /      0x2f     47
 59,             //  7      0x37     55
 60,             //  8      0x38     56
 61,             //  9      0x39     57
-BLANK_SPACE,    //  :      0x3a     58
+63,    			//  :      0x3a     58
 BLANK_SPACE,    //  ;      0x3b     59
 BLANK_SPACE,    //  <      0x3c     60
 BLANK_SPACE,    //  =      0x3d     61
@@ -900,7 +900,19 @@ uint8 characters[MAPPED_CHARS][70] = {
 		0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,   
-    }
+    },
+	{
+		0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,
+		0,0,0,1,1,0,0,
+		0,0,0,1,1,0,0,
+		0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,
+		0,0,0,1,1,0,0,
+		0,0,0,1,1,0,0,
+		0,0,0,0,0,0,0, 		
+	}
 };
 
 
