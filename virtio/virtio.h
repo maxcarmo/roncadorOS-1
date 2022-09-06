@@ -8,7 +8,7 @@
 
 
 #define VIRTIO_MAGIC 0x74726976 //"triv" em little endian fica virt
-
+#define VIRTIO_F_EVENT_IDX        29
 
 #define DEVICE_WIDTH 900
 #define DEVICE_HEIGHT 832
@@ -54,6 +54,16 @@ typedef enum MMIO_Regs {
 	CONFIG = 			0X100 // RW	|| Configuration space
 }MMIOReg;
 
+
+typedef enum Virtio_Devices {
+	NO_DEVICE =					0X00,
+	NETWORKD_CARD_DEVICE_ID = 	0X01,
+	BLOCK_DEVICE_ID = 			0X02,
+	CONSOLE_DEVICE_ID = 		0X03,
+	ENTROPY_DEVICE_ID = 		0X04,
+	GPU_DEVICE_ID = 			0X10,
+	INPUT_DEVICE_ID = 			0X12
+}Device_id;
 
 
 
@@ -102,7 +112,6 @@ uint32 read_from_reg(uint64 base, MMIOReg reg);
 void write_to_reg(uint64 base, MMIOReg reg, uint32 value);
 void set_bit(uint64 base, MMIOReg reg, uint32 mask);
 void set_descriptor(VirtQDescriptor *desc, uint64 address, uint32 length, uint16 flags, uint16 next);
-void read_regs(uint32 *ptr);
 void handle_virt_int(int id);
 void virtio_probe();
 
