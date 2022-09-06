@@ -239,15 +239,15 @@ pages_init() {
     for (i = 0; i < total_pages; i++) {
         *ptr++ = FREEPG; 
     }
-    printf("HEAP START <pages_init>:%p\n", HEAP_START);
-    printf("Paginas da lista de desc: %d\n", reserved_pages);
+    // printf("HEAP START <pages_init>:%p\n", HEAP_START);
+    // printf("Paginas da lista de desc: %d\n", reserved_pages);
     alloc_start = page_round_up((uint64)HEAP_START + reserved_pages * PAGE_SIZE); 
 }
 
 void
 memory_init() {
     char* s = "É a VIda...";
-    printf("String:%s\n", s);
+    //printf("String:%s\n", s);
     pages_init();
 }
 
@@ -282,7 +282,7 @@ kvminit(){
         panic("Erro ao alocar página L2 para tabela de página");
     }
     memset(kernel_pagetable, 0, PAGE_SIZE);
-    printf("<memory.c> Endereço da tab de página do kernel:%p\n", kernel_pagetable);
+    //printf("<memory.c> Endereço da tab de página do kernel:%p\n", kernel_pagetable);
     // A região do código (text + rodata) é de leitura e execução
     kvmmap(KERNEL_START, KERNEL_START, (uint64) text_end - KERNEL_START, PTE_R | PTE_X);
     // A região de dados (dados + pilha + heap) é de leitura e escrita        
