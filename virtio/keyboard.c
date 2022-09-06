@@ -68,7 +68,7 @@ void setup_input_device(uint64 addr){
     set_bit(addr, STATUS, STATUS_DRIVER);
     //read feat bits and write it on the device
     uint32 device_feat = read_from_reg(addr, HOST_FEATURES);
-    device_feat &= ~(1 << 29);
+    device_feat &= ~(1 << VIRTIO_F_EVENT_IDX);
     write_to_reg(addr, GUEST_FEATURES, device_feat);
     //setup virtq - populate virtq - read conf - write confg
     uint32 num_pages = 1 + sizeof(VirtQ)/PAGE_SIZE;
@@ -79,7 +79,6 @@ void setup_input_device(uint64 addr){
     write_to_reg(addr, GUEST_PAGE_SIZE, PAGE_SIZE); //writing the page size so the device can calculate the physical address
     write_to_reg(addr, QUEUE_PFN,  q_pfn); //write the physical page number
 
-    read_regs((uint32*)addr);
 
     num_pages = 1 + sizeof(VirtQ)/PAGE_SIZE;
     VirtQ *status_queue = (VirtQ*) alloc(num_pages);
@@ -89,13 +88,11 @@ void setup_input_device(uint64 addr){
     write_to_reg(addr, GUEST_PAGE_SIZE, PAGE_SIZE); //writing the page size so the device can calculate the physical address
     write_to_reg(addr, QUEUE_PFN,  q_pfn); //write the physical page number
 
-    read_regs((uint32*)addr);
 
     //set DRIVER_OK status bit
     set_bit(addr, STATUS, STATUS_DRIVER_OK);
     //now, our device is alive
 
-    read_regs((uint32*)addr);
 
     num_pages = 1 + ((sizeof(virtio_input_event) * TOTAL_EVENT_BUFFER) / PAGE_SIZE);
 
