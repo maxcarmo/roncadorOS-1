@@ -52,7 +52,7 @@ plic_init() {
     // threshold serão mascaradas. O threshold máximo é 7.
     // No caso, todas as interrupções são aceitas 
     plic_threshold(0); 
-    for (int i =1; i<=6; i++){
+    for (int i =1; i<=8; i++){
         plic_enable(i);
         plic_priority(i, 2);
     }
