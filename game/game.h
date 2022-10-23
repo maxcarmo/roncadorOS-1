@@ -10,7 +10,7 @@
 #define NUM_OF_TETROMINOS 7 //7 variants of tetrominoes
 #define START_OFFSET 3
 
-#define FIELD_WIDTH 12 //12 blocks width
+#define FIELD_WIDTH 10 //10 blocks width
 #define FIELD_HEIGHT (20 + START_OFFSET) //20 blocks height + start offset
 
 #define FIELD_START_X ((DEVICE_WIDTH/2) - (FIELD_WIDTH*(BLOCK_SIZE/2))) //where in width of the device the field starts

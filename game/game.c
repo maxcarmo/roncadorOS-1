@@ -846,7 +846,7 @@ void draw(){
 
         //
     }else{
-        bg_color(COLOR_HEX(0x101010));
+        bg_color(COLOR_HEX(0x131013));
         clear();
         draw_field(game.field);
         draw_score(game.score);
